@@ -1,50 +1,187 @@
-import { products, categories, sizesFor, money, EBAY_STORE_URL } from '/catalog.js';
-const $ = s => document.querySelector(s);
-const escapeHTML = s => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+import {products, categories, EBAY_STORE_URL} from '/catalog.js';
+import '/interactions.js';
+
+const $ = selector => document.querySelector(selector);
+const escapeHTML = value => String(value).replace(/[&<>"']/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character]));
+const arrow = '<svg class="arrow-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19 19 5M5 5h14v14"/></svg>';
 const icons = {
- search:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.7"/><path d="m16 16 5 5"/></svg>',
- heart:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.7c-2.3-2.2-6-1.5-8.8 1.5C9.2 3.2 5.5 2.5 3.2 4.7c-2.4 2.4-1.6 6.5.8 9L12 21l8-7.3c2.4-2.5 3.2-6.6.8-9z"/></svg>',
- menu:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h18M3 16h18"/></svg>'
+  search: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.7"/><path d="m16 16 5 5"/></svg>',
+  heart: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.7c-2.3-2.2-6-1.5-8.8 1.5C9.2 3.2 5.5 2.5 3.2 4.7c-2.4 2.4-1.6 6.5.8 9L12 21l8-7.3c2.4-2.5 3.2-6.6.8-9z"/></svg>',
+  menu: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h18M3 16h18"/></svg>'
 };
-$('#search-open').innerHTML=icons.search;$('.saved-link').innerHTML=icons.heart;$('#menu-open').innerHTML=icons.menu;$('#year').textContent=new Date().getFullYear();
-function read(key,fallback){try{return JSON.parse(localStorage.getItem(key))??fallback}catch{return fallback}}
-function persist(key,value){try{localStorage.setItem(key,JSON.stringify(value))}catch{}}
-let bag=read('evovo.bag',[]);if(!Array.isArray(bag))bag=[];
-bag=bag.filter(x=>x&&products.some(p=>p.id===x.id&&sizesFor(p).includes(x.size))&&Number.isInteger(x.qty)&&x.qty>0&&x.qty<=10);
-let saved=read('evovo.saved',[]);if(!Array.isArray(saved))saved=[];saved=[...new Set(saved.filter(id=>products.some(p=>p.id===id)))];
+$('#search-open').innerHTML = icons.search;
+$('.saved-link').innerHTML = icons.heart;
+$('#menu-open').innerHTML = icons.menu;
+$('#year').textContent = new Date().getFullYear();
+document.querySelectorAll('[data-arrow]').forEach(element => element.innerHTML = arrow);
+
+function readSaved() {
+  try {
+    const value = JSON.parse(localStorage.getItem('evovo.saved') || '[]');
+    return Array.isArray(value) ? [...new Set(value.filter(id => products.some(p => p.id === id)))] : [];
+  } catch { return []; }
+}
+let saved = readSaved();
 let toastTimer;
-function toast(message){$('#toast').textContent=message;$('#toast').hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast').hidden=true,2600)}
-const asset = p=>'/assets/'+p.image;
-const productURL = p=>'/products/'+p.id+'/';
-function card(p){return `<article class="product-card"><a class="product-image" href="${productURL(p)}"><img src="${asset(p)}" alt="${p.color} ${p.name} — sample collection image" loading="lazy" width="800" height="960"><span class="product-tag">${p.tag}</span></a><button class="save-button" data-save="${p.id}" aria-label="${saved.includes(p.id)?'Unsave':'Save'} ${p.name}" aria-pressed="${saved.includes(p.id)}">${icons.heart}</button><div class="product-info"><a href="${productURL(p)}">${p.name}</a><span>${money(p.price)}</span></div><div class="product-meta"><span>${p.category} / ${p.fit} fit</span><span><i class="color-dot" style="background:${p.hex}"></i>${p.color}</span></div><a class="quick-shop" href="${productURL(p)}">Explore piece &nbsp; +</a></article>`}
-function sectionHeading(label,title,href='/shop/',link='View all pieces'){return `<div class="section-head"><div><span class="eyebrow">${label}</span><h2>${title}</h2></div><a href="${href}" class="text-link">${link} &nbsp; <svg class="arrow-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19 19 5M5 5h14v14"/></svg></a></div>`}
-function home(){return `<section class="hero"><img class="hero-image" src="/assets/hero-dark.jpg" alt="Dark menswear editorial: a black hooded silhouette" fetchpriority="high" width="1800" height="2250"><div class="hero-content"><span class="eyebrow">EVOVO — COLLECTION 01</span><h1>NEVER<br>STAND <em>STILL.</em></h1><p>Your next move starts here.<br>A new expression of everyday.</p><a href="/shop/" class="pill coffee">Explore the collection <span><svg class="arrow-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19 19 5M5 5h14v14"/></svg></span></a></div><div class="hero-bottom"><span>YOUR OWN DIRECTION. ALWAYS.</span><div class="hero-index">01 <span></span> 01</div></div></section><div class="ticker" aria-label="EVOVO brand statement"><span>EVERYDAY, EVOLVED.</span><i aria-hidden="true"><svg class="ticker-mark" viewBox="0 0 24 24"><path d="M12 2v20M2 12h20M5 5l14 14M5 19 19 5"/></svg></i><span>MOVE YOUR OWN WAY.</span><i aria-hidden="true"><svg class="ticker-mark" viewBox="0 0 24 24"><path d="M12 2v20M2 12h20M5 5l14 14M5 19 19 5"/></svg></i><span>NEVER STAND STILL.</span><i aria-hidden="true"><svg class="ticker-mark" viewBox="0 0 24 24"><path d="M12 2v20M2 12h20M5 5l14 14M5 19 19 5"/></svg></i></div><section class="section">${sectionHeading('THE ESSENTIAL EDIT','Find your uniform.','/shop/','Shop the collection')}<div class="category-grid">${categories.map((c,i)=>`<a class="category-card" href="/shop/${c.toLowerCase()}/"><img src="/assets/${['tee-plain-black.jpg','hoodie-white.jpg','pants-olive.jpg','socks-plain.jpg'][i]}" alt="Explore men's ${c.toLowerCase()}" loading="lazy"><span class="category-title">${c}<span class="circle-arrow"><svg class="arrow-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19 19 5M5 5h14v14"/></svg></span></span></a>`).join('')}</div></section><section class="section grey">${sectionHeading('ON YOUR RADAR','The daily rotation.')}<div class="product-grid">${products.slice(0,4).map(card).join('')}</div></section><section class="statement"><img class="statement-image" src="/assets/editorial.jpg" alt="Men's casual streetwear editorial" loading="lazy"><div class="statement-content"><span class="eyebrow">THE EVOVO MINDSET</span><h2>Less noise.<br><span>More you.</span></h2><p>Style doesn't stand still. Neither do you. EVOVO is a new point of view on the pieces you reach for every day. Your uniform. Your own rules.</p><a href="/about/" class="pill white">Our direction <span><svg class="arrow-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19 19 5M5 5h14v14"/></svg></span></a></div></section><section class="brand-strip"><h2>NO RULES.<br>JUST DIRECTION.</h2><p>Explore the first EVOVO collection concept. The beginning of something that moves with you.</p><a href="/shop/" class="pill outline">Make your next move <span><svg class="arrow-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19 19 5M5 5h14v14"/></svg></span></a></section>`}
-let currentCategory='All';let query=new URLSearchParams(location.search).get('q')||'';let sort='featured';
-function catalogPage(category='All',isSaved=false){currentCategory=category;return `<div class="breadcrumbs"><a href="/">Home</a><span>/</span><span>${isSaved?'Saved items':category==='All'?'The collection':category}</span></div><section class="catalog-head"><div><span class="eyebrow">${isSaved?'YOUR PERSONAL ROTATION':'EVOVO / COLLECTION 01'}</span><h1>${isSaved?'Saved pieces.':category==='All'?'The collection.':category+'.'}</h1><p>${isSaved?'Keep your favorites close. Saved on this device, ready for your next move.':'A new point of view on your everyday uniform. Explore the collection and make it your own.'}</p></div><span class="eyebrow">YOUR OWN DIRECTION. ALWAYS.</span></section>${isSaved?'':`<div class="catalog-controls"><nav class="category-tabs" aria-label="Collection categories">${['All',...categories].map(c=>`<a class="${c===category?'active':''}" ${c===category?'aria-current="page"':''} href="/shop/${c==='All'?'':c.toLowerCase()+'/'}">${c==='All'?'All pieces':c}</a>`).join('')}</nav><label class="sort"><span class="sr-only">Sort products</span><select id="product-sort"><option value="featured">Sort: Featured</option><option value="low">Price: Low to high</option><option value="high">Price: High to low</option><option value="name">Name: A to Z</option></select></label></div>`}<section class="catalog-body"><div class="results-line"><span id="results-count"></span>${isSaved?'':`<form class="inline-search" id="collection-search"><label class="sr-only" for="collection-query">Search collection</label><input id="collection-query" type="search" placeholder="Search this collection" value="${escapeHTML(query)}"><button aria-label="Search collection"><svg class="arrow-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19 19 5M5 5h14v14"/></svg></button></form>`}</div><div class="product-grid" id="collection-grid"></div></section>`}
-function filterProducts(){let list=products.filter(p=>(currentCategory==='All'||p.category===currentCategory)&&(!isSavedPage||saved.includes(p.id)));const q=query.trim().toLowerCase();if(q)list=list.filter(p=>`${p.name} ${p.category} ${p.color} ${p.fit}`.toLowerCase().includes(q));if(sort==='low')list.sort((a,b)=>a.price-b.price);if(sort==='high')list.sort((a,b)=>b.price-a.price);if(sort==='name')list.sort((a,b)=>a.name.localeCompare(b.name));$('#results-count').textContent=`${list.length} ${list.length===1?'piece':'pieces'}${q?' / '+query:''}`;$('#collection-grid').innerHTML=list.length?list.map(card).join(''):`<div class="empty"><h2>${isSavedPage?'Make it your rotation.':'Nothing here. Yet.'}</h2><p>${isSavedPage?'Tap the heart on a piece to save it here.':'Try a different search or explore the full collection.'}</p><a class="pill" href="/shop/">Explore all pieces <svg class="arrow-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19 19 5M5 5h14v14"/></svg></a></div>`}
-function detail(p){return `<nav class="breadcrumbs" aria-label="Breadcrumb"><a href="/">Home</a><span>/</span><a href="/shop/${p.category.toLowerCase()}/">${p.category}</a><span>/</span><span>${p.name}</span></nav><section class="product-detail"><div class="detail-image"><img src="${asset(p)}" alt="${p.name} in ${p.color}, sample product photography" fetchpriority="high"><span class="product-tag">${p.tag}</span></div><div class="detail-content"><span class="eyebrow">EVOVO / ${p.category}</span><h1>${p.name}</h1><p class="detail-price">${money(p.price)} <span class="muted">USD</span></p><p class="detail-copy">${p.description}</p><div class="detail-color"><span class="color-dot" style="background:${p.hex}"></span>Color: ${p.color}</div><div class="size-top"><span>Select size <span id="size-selection-label"></span></span><button data-size-guide>Size guide <svg class="arrow-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19 19 5M5 5h14v14"/></svg></button></div><div class="size-options" role="group" aria-label="Select size">${sizesFor(p).map(s=>`<button data-size="${s}" aria-pressed="false">${s}</button>`).join('')}</div><button class="pill detail-add" id="detail-add" data-product="${p.id}">Select a size <span>+</span></button><button class="pill outline detail-save" data-save="${p.id}" aria-pressed="${saved.includes(p.id)}">${icons.heart}<span>${saved.includes(p.id)?'Saved to your rotation':'Save for later'}</span></button><p class="detail-note">Preview collection · Sample imagery & pricing.<br>Shop current EVOVOFinds listings and purchase on eBay.</p><details open><summary>The details</summary><p>${p.fit} silhouette. ${p.color} colorway. This concept shows the design direction; final fabric, composition, measurements, and care instructions are pending the real product catalog.</p></details><details><summary>Delivery & returns</summary><p>Purchases take place on eBay. Check each EVOVOFinds listing for available sizes, delivery details, shipping prices, and return terms.</p></details></div></section><section class="section grey">${sectionHeading('BUILD YOUR ROTATION','Complete the look.')}<div class="product-grid">${products.filter(x=>x.id!==p.id).slice(0,4).map(card).join('')}</div></section>`}
-function about(){return `<section class="editorial-page"><img src="/assets/hero-dark.jpg" alt="EVOVO concept: black hoodie in a dramatic editorial portrait"><div class="statement-content"><span class="eyebrow">THIS IS EVOVO.</span><h2>Always<br><span>evolving.</span></h2><p>EVOVO starts with an idea: everyday doesn't have to mean ordinary. A sharper silhouette. An unexpected detail. A new way to wear the familiar.</p><p>Our first collection concept explores the essentials: shirts, hoodies, pants, and socks. Pieces to build your own direction around.</p><a href="/shop/" class="pill coffee">Explore collection 01 <span><svg class="arrow-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19 19 5M5 5h14v14"/></svg></span></a></div></section><section class="brand-strip"><h2>YOUR UNIFORM.<br>YOUR OWN RULES.</h2><p>EVOVO is currently in preview. The imagery and catalog show our creative direction while the final collection takes shape.</p><a href="/help/" class="text-link">Store information <svg class="arrow-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19 19 5M5 5h14v14"/></svg></a></section>`}
-function help(){return `<article class="help-layout"><span class="eyebrow">THE USEFUL DETAILS</span><h1>Good to know.</h1><section class="help-section"><h2>Store status</h2><p class="preview-note">EVOVO is a preview storefront. Products, stock imagery, and prices are illustrative. Browsing, search, saved items, and your bag work. Checkout takes you to EVOVOFinds on eBay to view available listings and complete your purchase.</p><p>Your EVOVO bag does not transfer to eBay. Choose your items from the current eBay listings; their prices and availability may differ from this preview. No payment information is collected on this site.</p></section><section id="sizing" class="help-section"><h2>Find your fit</h2><p>Use the reference size guide to explore sizing. Measurements are illustrative until the final catalog is supplied.</p><button class="pill outline" data-size-guide>Open size guide <svg class="arrow-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19 19 5M5 5h14v14"/></svg></button></section><section id="shipping" class="help-section"><h2>Shipping & returns</h2><p>Delivery regions, rates, estimated delivery times, and return terms are shown on each eBay listing. Review the listing details before purchasing through eBay.</p></section><section class="help-section"><h2>Questions & contact</h2><p>For questions about an item or purchase, contact EVOVOFinds through the eBay seller page. This site does not send or store customer messages.</p></section><section id="privacy" class="help-section"><h2>Your privacy in this preview</h2><p>Your bag and saved pieces stay in your browser's local storage. There is no account registration, payment collection, or order submission. Fonts and images are served with the site. Clearing your browser data removes your saved pieces and bag.</p><button id="clear-data" class="text-link">Clear my saved pieces and bag</button></section></article>`}
-const itemCount=()=>bag.reduce((n,x)=>n+x.qty,0);
-const subtotal=()=>bag.reduce((n,x)=>n+products.find(p=>p.id===x.id).price*x.qty,0);
-function checkout(){return `<section class="section empty"><span class="eyebrow">EVOVOFINDS ON EBAY</span><h1 class="page-heading">Continue to eBay.</h1><p>Choose from the current EVOVOFinds listings and complete your purchase on eBay.<br>Your EVOVO bag does not transfer.</p><a class="pill" href="${EBAY_STORE_URL}">Checkout on eBay</a></section>`}
-let selectedSize='';const path=location.pathname.replace(/\/+$/,'')||'/';const isSavedPage=path==='/saved';const isCatalog=path==='/shop'||path.startsWith('/shop/')||isSavedPage;
-function renderPage(){if(path==='/')$('#main').innerHTML=home();else if(isCatalog){const slug=path.split('/')[2];const category=categories.find(c=>c.toLowerCase()===slug)||'All';if(slug&&!categories.some(c=>c.toLowerCase()===slug)){notFound();return}$('#main').innerHTML=catalogPage(category,isSavedPage);document.title=`${isSavedPage?'Saved pieces':category==='All'?'The collection':category} — EVOVO`;filterProducts()}else if(path.startsWith('/products/')){const p=products.find(p=>p.id===path.split('/')[2]);if(!p){notFound();return}document.title=p.name+' — EVOVO';$('#main').innerHTML=detail(p)}else if(path==='/about'){$('#main').innerHTML=about();document.title='Our mindset — EVOVO'}else if(path==='/help'){$('#main').innerHTML=help();document.title='Good to know — EVOVO'}else if(path==='/checkout'){$('#main').innerHTML=checkout();document.title='Checkout on eBay — EVOVO';location.replace(EBAY_STORE_URL)}else notFound();document.querySelectorAll('.desktop-nav a').forEach(a=>{if(a.getAttribute('href').replace(/\/$/,'')===path)a.setAttribute('aria-current','page')})}
-function notFound(){document.title='Page not found — EVOVO';$('#main').innerHTML='<section class="section empty"><span class="eyebrow">404 / A DIFFERENT DIRECTION</span><h1 class="page-heading">Lost your way?</h1><p>That page isn’t in this collection.</p><a class="pill" href="/shop/">Back to the collection <svg class="arrow-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19 19 5M5 5h14v14"/></svg></a></section>'}
-function updateBag(){persist('evovo.bag',bag);$('#bag-count').textContent=itemCount();$('#cart-dialog-count').textContent=`(${itemCount()})`;$('#cart-content').innerHTML=bag.length?bag.map((x,i)=>{const p=products.find(p=>p.id===x.id);return `<article class="cart-item"><a href="${productURL(p)}"><img src="${asset(p)}" alt="${p.name}"></a><div class="cart-item-content"><div class="cart-item-top"><a href="${productURL(p)}">${p.name}</a><span>${money(x.qty*p.price)}</span></div><p>${p.color} / Size ${x.size}</p><div class="cart-item-bottom"><div class="quantity"><button data-quantity="${i}" data-delta="-1" aria-label="Decrease quantity of ${p.name}" ${x.qty===1?'disabled':''}>−</button><span aria-live="polite">${x.qty}</span><button data-quantity="${i}" data-delta="1" aria-label="Increase quantity of ${p.name}" ${x.qty===10?'disabled':''}>+</button></div><button class="remove-item" data-remove="${i}" aria-label="Remove ${p.name}">Remove</button></div></div></article>`}).join('')+`<div class="cart-summary"><div class="totals"><span>Subtotal</span><strong>${money(subtotal())}</strong></div><a href="${EBAY_STORE_URL}" class="pill">Checkout on eBay <span><svg class="arrow-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19 19 5M5 5h14v14"/></svg></span></a><p>Choose your items and complete your purchase on eBay.<br>Your EVOVO bag does not transfer.</p><button class="text-link" data-close="cart-dialog">Continue exploring</button></div>`:`<div class="empty"><h2>Start your rotation.</h2><p>Your bag is empty.<br>Find a piece that feels like you.</p><a href="/shop/" class="pill">Explore collection 01 <svg class="arrow-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19 19 5M5 5h14v14"/></svg></a></div>`;if(path==='/checkout')$('#main').innerHTML=checkout()}
-function showDialog(id){document.getElementById(id).showModal()}
-function updateSaved(){persist('evovo.saved',saved);document.querySelectorAll('[data-save]').forEach(b=>{const yes=saved.includes(b.dataset.save);const p=products.find(p=>p.id===b.dataset.save);b.setAttribute('aria-pressed',String(yes));if(b.classList.contains('save-button'))b.setAttribute('aria-label',`${yes?'Unsave':'Save'} ${p.name}`);else b.querySelector('span').textContent=yes?'Saved to your rotation':'Save for later'});if(isSavedPage)filterProducts()}
-function searchResults(){const q=$('#search-input').value.trim().toLowerCase();const list=products.filter(p=>!q||`${p.name} ${p.category} ${p.color}`.toLowerCase().includes(q)).slice(0,5);$('#search-results').innerHTML=`<p class="search-results-label">${q?'MATCHING PIECES':'EXPLORE THE COLLECTION'}</p>`+(list.length?list.map(p=>`<a class="search-result" href="${productURL(p)}"><img src="${asset(p)}" alt=""><div><strong>${p.name}</strong><p>${p.category} / ${p.color}</p></div><span>${money(p.price)} <svg class="arrow-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19 19 5M5 5h14v14"/></svg></span></a>`).join(''):'<p class="detail-note">No matches. Try shirts, hoodies, pants, or socks.</p>')}
-document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.close)document.getElementById(b.dataset.close).close();if(b.id==='cart-open')showDialog('cart-dialog');if(b.id==='search-open'){searchResults();showDialog('search-dialog')}if(b.id==='menu-open')showDialog('menu-dialog');if(b.hasAttribute('data-size-guide'))showDialog('size-dialog');if(b.dataset.save){const id=b.dataset.save;const yes=saved.includes(id);saved=yes?saved.filter(x=>x!==id):[...saved,id];updateSaved();toast(yes?'Removed from saved pieces':'Saved to your rotation')}
- if(b.dataset.size){selectedSize=b.dataset.size;document.querySelectorAll('[data-size]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));$('#size-selection-label').textContent=' / '+selectedSize;$('#detail-add').innerHTML='Add to bag <span>+</span>'}
- if(b.id==='detail-add'){if(!selectedSize){toast('Choose a size to add this piece');document.querySelector('[data-size]').focus();return}const id=b.dataset.product;const old=bag.find(x=>x.id===id&&x.size===selectedSize);if(old&&old.qty>=10){toast('Maximum 10 of each size in your bag');return}if(old)old.qty++;else bag.push({id,size:selectedSize,qty:1});updateBag();toast('Added to your bag')}
- if(b.dataset.quantity!==undefined){const index=Number(b.dataset.quantity),delta=Number(b.dataset.delta);if(bag[index])bag[index].qty=Math.min(10,Math.max(1,bag[index].qty+delta));updateBag();const target=document.querySelector(`[data-quantity="${index}"][data-delta="${delta}"]`);if(target&&!target.disabled)target.focus()}
- if(b.dataset.remove!==undefined){bag.splice(Number(b.dataset.remove),1);updateBag();toast('Piece removed from your bag')}
- if(b.id==='clear-data'){bag=[];saved=[];updateBag();updateSaved();toast('Your bag and saved pieces were cleared')}
+function toast(message) {
+  $('#toast').textContent = message;
+  $('#toast').hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => $('#toast').hidden = true, 2400);
+}
+const asset = p => '/assets/' + p.image;
+const productURL = p => '/products/' + p.id + '/';
+const ebayButton = (label = 'Shop EVOVOFinds on eBay', className = 'pill') => `<a class="${className}" href="${EBAY_STORE_URL}" data-haptic>${label} ${arrow}</a>`;
+const referenceNote = '<p class="reference-note">Style inspiration using reference photography. For items, prices, and availability, visit our eBay listings.</p>';
+
+function card(p) {
+  const isSaved = saved.includes(p.id);
+  return `<article class="product-card">
+    <a class="product-image" href="${productURL(p)}"><img src="${asset(p)}" alt="${p.name}, style reference" loading="lazy" width="800" height="960"><span class="product-tag">Style idea</span></a>
+    <button class="save-button" data-save="${p.id}" aria-label="${isSaved ? 'Unsave' : 'Save'} ${p.name}" aria-pressed="${isSaved}">${icons.heart}</button>
+    <div class="product-info"><a href="${productURL(p)}">${p.name}</a><span>${arrow}</span></div>
+    <p class="product-meta">${p.category} · ${p.color}</p>
+  </article>`;
+}
+function sectionHeading(label, title, href = '/shop/', link = 'All style ideas') {
+  return `<div class="section-head"><div><span class="eyebrow">${label}</span><h2>${title}</h2></div><a class="text-link" href="${href}">${link} ${arrow}</a></div>`;
+}
+function steps() {
+  return `<div class="steps-grid">
+    <article><span class="step-number">01</span><h3>Explore the listings</h3><p>Our eBay seller page is the place to see what's currently available.</p></article>
+    <article><span class="step-number">02</span><h3>Check the details</h3><p>Look at the item photos, measurements, condition, and delivery details on each listing.</p></article>
+    <article><span class="step-number">03</span><h3>Buy through eBay</h3><p>Choose your item and complete checkout on eBay. You can message the seller there, too.</p></article>
+  </div>`;
+}
+function home() {
+  return `<section class="home-hero">
+    <div class="hero-copy"><span class="eyebrow">EVOVO / EVOVOFINDS ON EBAY</span><h1>Your next find.<br><em>A little more you.</em></h1><p>Good style starts with something that feels like you. Explore a few ideas here, then head to EVOVOFinds on eBay for our current listings.</p><div class="hero-actions">${ebayButton('Explore our eBay')}<a class="text-link" href="/shop/">Find your style ${arrow}</a></div><div class="hero-detail"><span class="small-dot"></span>Listing details and checkout are on eBay.</div></div>
+    <div class="hero-visual"><img class="hero-photo" src="/assets/hero.jpg" alt="Menswear style reference in a sunlit architectural setting" width="1800" height="2250" fetchpriority="high"><span class="photo-caption">A little inspiration for the everyday.</span><div class="seller-card"><img src="/assets/evovofinds-avatar.png" alt="EVOVOFinds EF monogram" width="64" height="64"><div><strong>EVOVOFinds</strong><span>Find us on eBay</span></div><a href="${EBAY_STORE_URL}" class="seller-arrow" aria-label="View EVOVOFinds on eBay">${arrow}</a></div></div>
+  </section>
+  <section class="how-strip" aria-label="Shopping at EVOVO"><span>One seller. One clear place to shop.</span><a href="/help/">Here's how it works ${arrow}</a><div><span>Browse on eBay</span><i></i><span>Buy on eBay</span><i></i><span>Message on eBay</span></div></section>
+  <section class="section" data-reveal>${sectionHeading('A LITTLE INSPIRATION', 'Make it your everyday.')}<div class="category-grid">${categories.map((c, i) => `<a class="category-card" href="/shop/${c.toLowerCase()}/"><div><img src="/assets/${['tee-plain-black.jpg','hoodie-white.jpg','pants-olive.jpg','socks-plain.jpg'][i]}" alt="${c} style inspiration" loading="lazy"></div><span>${c} ${arrow}</span></a>`).join('')}</div>${referenceNote}</section>
+  <section class="section soft" data-reveal>${sectionHeading('THE STYLE NOTES', 'Simple pieces. Your own way.')}<div class="product-grid">${products.slice(0, 4).map(card).join('')}</div></section>
+  <section class="shopping-story section" data-reveal><div><span class="eyebrow">A CLEARER WAY TO SHOP</span><h2>The details<br>make the difference.</h2><p>We keep this site for the inspiration, and eBay for the shopping. No second checkout, no separate account to create here.</p><a href="/help/" class="text-link">More about shopping with us ${arrow}</a></div><div>${steps()}</div></section>
+  <section class="seller-section" data-reveal><div class="seller-profile"><img src="/assets/evovofinds-avatar.png" alt="EVOVOFinds logo" width="72" height="72"><div><span class="eyebrow">THE SELLER BEHIND THE SITE</span><h2>Meet EVOVOFinds.</h2></div></div><p>See our current listings, read the seller profile, or get in touch directly on eBay.</p>${ebayButton('Visit our eBay page')}</section>`;
+}
+
+const path = location.pathname.replace(/\/+$/, '') || '/';
+const isSavedPage = path === '/saved';
+const isCatalog = path === '/shop' || path.startsWith('/shop/') || isSavedPage;
+let currentCategory = 'All';
+let query = new URLSearchParams(location.search).get('q') || '';
+let sort = 'editorial';
+function catalogPage(category = 'All', savedPage = false) {
+  currentCategory = category;
+  return `<div class="breadcrumbs"><a href="/">Home</a><span>/</span><span>${savedPage ? 'Saved ideas' : category === 'All' ? 'Style ideas' : category}</span></div>
+    <section class="catalog-head"><span class="eyebrow">${savedPage ? 'YOUR OWN MOODBOARD' : 'THE STYLE NOTES'}</span><h1>${savedPage ? 'Keep the good ideas.' : category === 'All' ? 'A little inspiration.' : category + ', your way.'}</h1><p>${savedPage ? 'Ideas you saved on this device. Come back to them whenever you need a little inspiration.' : 'A few ways to think about your everyday wardrobe. These are style references, not items listed for sale.'}</p>${ebayButton('Shop current listings', 'text-link')}</section>
+    <section class="catalog-body">${savedPage ? '' : `<div class="catalog-controls"><nav class="category-tabs" aria-label="Style categories">${['All', ...categories].map(c => `<a class="${c === category ? 'active' : ''}" ${c === category ? 'aria-current="page"' : ''} href="/shop/${c === 'All' ? '' : c.toLowerCase() + '/'}">${c === 'All' ? 'All ideas' : c}</a>`).join('')}</nav><label class="sort"><span class="sr-only">Sort style ideas</span><select id="product-sort"><option value="editorial">Our edit</option><option value="name">Name: A to Z</option></select></label></div>`}
+    <div class="results-line"><span id="results-count"></span>${savedPage ? '' : `<form class="inline-search" id="collection-search"><label class="sr-only" for="collection-query">Search style ideas</label><input id="collection-query" type="search" placeholder="Find an idea…" value="${escapeHTML(query)}"><button aria-label="Search ideas">${icons.search}</button></form>`}</div><div class="product-grid" id="collection-grid"></div>${referenceNote}</section>`;
+}
+function filterProducts() {
+  let list = products.filter(p => (currentCategory === 'All' || p.category === currentCategory) && (!isSavedPage || saved.includes(p.id)));
+  const q = query.trim().toLowerCase();
+  if (q) list = list.filter(p => `${p.name} ${p.category} ${p.color}`.toLowerCase().includes(q));
+  if (sort === 'name') list.sort((a,b) => a.name.localeCompare(b.name));
+  $('#results-count').textContent = `${list.length} ${list.length === 1 ? 'idea' : 'ideas'}${q ? ' for “' + query + '”' : ''}`;
+  $('#collection-grid').innerHTML = list.length ? list.map(card).join('') : `<div class="empty"><h2>${isSavedPage ? 'Start your moodboard.' : 'Try another direction.'}</h2><p>${isSavedPage ? 'Tap the heart on a style idea to keep it here.' : 'No matches this time. Try a category or a different search.'}</p><a href="/shop/" class="pill">Explore style ideas ${arrow}</a></div>`;
+}
+function detail(p) {
+  return `<nav class="breadcrumbs" aria-label="Breadcrumb"><a href="/">Home</a><span>/</span><a href="/shop/${p.category.toLowerCase()}/">${p.category}</a><span>/</span><span>Style note</span></nav>
+    <article class="product-detail"><div class="detail-image"><img src="${asset(p)}" alt="${p.name}, reference photography"><span class="product-tag">Style reference</span></div><div class="detail-content"><span class="eyebrow">THE STYLE NOTES / ${p.category}</span><h1>${p.name}</h1><p class="detail-copy">${p.description}</p><div class="reference-box"><strong>A little inspiration, not a listing.</strong><p>This photograph is a style reference. It doesn't represent an item available from EVOVOFinds. Check eBay for the actual item photos, prices, sizes, and availability.</p></div>${ebayButton('Browse EVOVOFinds on eBay')}<button class="pill outline detail-save" data-save="${p.id}" aria-pressed="${saved.includes(p.id)}">${icons.heart}<span>${saved.includes(p.id) ? 'Saved to your ideas' : 'Save this idea'}</span></button><details><summary>Shopping, delivery & returns ${arrow}</summary><p>Read the details on the individual eBay listing before buying. Shipping costs, condition, and return terms are shown there. If you have questions, message EVOVOFinds on eBay.</p></details></div></article>
+    <section class="section soft">${sectionHeading('ANOTHER DIRECTION', 'More to work with.')}<div class="product-grid">${products.filter(x => x.id !== p.id).slice(0,4).map(card).join('')}</div></section>`;
+}
+function about() {
+  return `<section class="about-page"><div class="about-image"><img src="/assets/editorial.jpg" alt="Casual menswear style reference"></div><div><span class="eyebrow">EVOVO / EVOVOFINDS</span><h1>A home for<br>your next find.</h1><p>EVOVO is the site. EVOVOFinds is the seller name you'll see on eBay. We wanted a place to share a little clothing inspiration, with a clear route to the actual listings.</p><p>The style notes here are references, not a product catalog. For what's available, see the photos and details on our eBay seller page.</p>${ebayButton()}<a class="text-link" href="/help/">How to shop ${arrow}</a></div></section>`;
+}
+function help() {
+  return `<article class="help-layout"><span class="eyebrow">GOOD TO KNOW</span><h1>Shopping,<br>made clearer.</h1><section class="help-section"><h2>Where do I buy?</h2><p>Go to EVOVOFinds on eBay to see the current listings. Select your item and complete checkout there. You don't need a separate EVOVO account, and this site doesn't collect payment information.</p>${ebayButton('Checkout on eBay')}</section><section class="help-section"><h2>Are these items for sale?</h2><p>The photographs in our style notes are inspiration only. They are not the seller's inventory. The actual item photos, prices, sizes, condition, and availability are on eBay.</p></section><section id="shipping" class="help-section"><h2>Shipping & returns</h2><p>Check the individual eBay listing for delivery estimates, shipping prices, and return terms. These can vary by item. Read the listing before you purchase.</p></section><section id="contact" class="help-section"><h2>A question about an item?</h2><p>Visit our seller page and use eBay's contact option to message EVOVOFinds. Keeping the conversation on eBay puts it alongside your listing or order.</p>${ebayButton('Visit the seller page', 'text-link')}</section><section id="privacy" class="help-section"><h2>Your saved ideas & preferences</h2><p>Your saved style ideas and tap-feedback preference are stored on this device. There is no EVOVO account, tracking analytics, payment collection, or newsletter signup. Fonts and photographs are served with this site. If you follow a link to eBay, eBay's own policies apply there.</p><button class="text-link" id="clear-data">Clear saved ideas & preferences</button></section><section class="help-section"><h2>A little tap feedback</h2><p>Supported phones can give a very short vibration when you tap a control. Use the tap-feedback switch in the footer to turn it off. iPhone Safari doesn't support web vibration, so you will see a small visual press instead. Reduced-motion settings are respected.</p></section></article>`;
+}
+function notFound() {
+  document.title = 'Page not found — EVOVO';
+  $('#main').innerHTML = `<section class="section empty"><span class="eyebrow">404</span><h1>A different direction.</h1><p>We couldn't find that page.</p><a href="/" class="pill">Back to EVOVO ${arrow}</a></section>`;
+}
+function renderPage() {
+  if (path === '/') $('#main').innerHTML = home();
+  else if (isCatalog) {
+    const slug = path.split('/')[2];
+    const category = categories.find(c => c.toLowerCase() === slug) || 'All';
+    if (slug && !categories.some(c => c.toLowerCase() === slug)) return notFound();
+    $('#main').innerHTML = catalogPage(category, isSavedPage);
+    document.title = (isSavedPage ? 'Saved ideas' : category === 'All' ? 'Style ideas' : category) + ' — EVOVO';
+    filterProducts();
+  } else if (path.startsWith('/products/')) {
+    const p = products.find(p => p.id === path.split('/')[2]);
+    if (!p) return notFound();
+    $('#main').innerHTML = detail(p);
+    document.title = p.name + ' — EVOVO';
+  } else if (path === '/about') { $('#main').innerHTML = about(); document.title = 'About EVOVOFinds — EVOVO'; }
+  else if (path === '/help') { $('#main').innerHTML = help(); document.title = 'How to shop — EVOVO'; }
+  else if (path === '/checkout') location.replace(EBAY_STORE_URL);
+  else notFound();
+  document.querySelectorAll('.desktop-nav a').forEach(a => {
+    if (a.getAttribute('href').replace(/\/$/, '') === path) a.setAttribute('aria-current', 'page');
+  });
+}
+function updateSaved() {
+  try { localStorage.setItem('evovo.saved', JSON.stringify(saved)); } catch {}
+  document.querySelectorAll('[data-save]').forEach(button => {
+    const yes = saved.includes(button.dataset.save);
+    const p = products.find(p => p.id === button.dataset.save);
+    button.setAttribute('aria-pressed', String(yes));
+    if (button.classList.contains('save-button')) button.setAttribute('aria-label', `${yes ? 'Unsave' : 'Save'} ${p.name}`);
+    else button.querySelector('span').textContent = yes ? 'Saved to your ideas' : 'Save this idea';
+  });
+  if (isSavedPage) filterProducts();
+}
+function searchResults() {
+  const q = $('#search-input').value.trim().toLowerCase();
+  const list = products.filter(p => !q || `${p.name} ${p.category} ${p.color}`.toLowerCase().includes(q)).slice(0,5);
+  $('#search-results').innerHTML = `<p class="search-results-label">${q ? 'STYLE IDEAS' : 'EXPLORE AN IDEA'}</p>` + (list.length ? list.map(p => `<a class="search-result" href="${productURL(p)}"><img src="${asset(p)}" alt=""><div><strong>${p.name}</strong><p>${p.category} · Style reference</p></div>${arrow}</a>`).join('') : '<p>No matches. Try shirts, hoodies, pants, or socks.</p>');
+}
+document.addEventListener('click', event => {
+  const button = event.target.closest('button');
+  if (!button) return;
+  if (button.dataset.close) document.getElementById(button.dataset.close).close();
+  if (button.id === 'search-open') { searchResults(); $('#search-dialog').showModal(); }
+  if (button.id === 'menu-open') $('#menu-dialog').showModal();
+  if (button.dataset.save) {
+    const id = button.dataset.save;
+    const wasSaved = saved.includes(id);
+    saved = wasSaved ? saved.filter(x => x !== id) : [...saved, id];
+    updateSaved();
+    toast(wasSaved ? 'Removed from saved ideas' : 'Saved for another day');
+  }
+  if (button.id === 'clear-data') {
+    saved = [];
+    try { ['evovo.saved', 'evovo.bag', 'evovo.haptics'].forEach(key => localStorage.removeItem(key)); } catch {}
+    updateSaved();
+    document.dispatchEvent(new Event('evovo:preferences-reset'));
+    toast('Your saved ideas and preferences are cleared');
+  }
 });
-document.addEventListener('change',e=>{if(e.target.id==='product-sort'){sort=e.target.value;filterProducts()}});
-document.addEventListener('input',e=>{if(e.target.id==='search-input')searchResults();if(e.target.id==='collection-query'){query=e.target.value;filterProducts();const url=new URL(location.href);query?url.searchParams.set('q',query):url.searchParams.delete('q');history.replaceState(null,'',url)}});
-document.addEventListener('submit',e=>{if(e.target.id==='collection-search'){e.preventDefault();query=$('#collection-query').value;filterProducts()}});
-document.querySelectorAll('dialog').forEach(d=>d.addEventListener('click',e=>{if(e.target===d){const r=d.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)d.close()}}));
-window.addEventListener('storage',e=>{if(e.key==='evovo.bag'||e.key==='evovo.saved')location.reload()});
-renderPage();updateBag();
+document.addEventListener('change', event => {
+  if (event.target.id === 'product-sort') { sort = event.target.value; filterProducts(); }
+});
+document.addEventListener('input', event => {
+  if (event.target.id === 'search-input') searchResults();
+  if (event.target.id === 'collection-query') {
+    query = event.target.value;
+    filterProducts();
+    const url = new URL(location.href);
+    query ? url.searchParams.set('q', query) : url.searchParams.delete('q');
+    history.replaceState(null, '', url);
+  }
+});
+document.addEventListener('submit', event => {
+  if (event.target.id === 'collection-search') { event.preventDefault(); query = $('#collection-query').value; filterProducts(); }
+});
+document.querySelectorAll('dialog').forEach(dialog => dialog.addEventListener('click', event => {
+  if (event.target !== dialog) return;
+  const rect = dialog.getBoundingClientRect();
+  if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) dialog.close();
+}));
+window.addEventListener('storage', event => { if (event.key === 'evovo.saved') { saved = readSaved(); updateSaved(); } });
+renderPage();
+// Render first so dynamically generated sections are available to the motion layer.
+document.dispatchEvent(new Event('evovo:content-ready'));

@@ -1,21 +1,27 @@
-# EVOVO
+# EVOVO / EVOVOFinds
 
-A complete responsive men's streetwear storefront, rebuilt from the original Turbo Clothes draft. Original EVOVO branding with a bold athletic editorial direction.
+An independent, coffee-toned home for EVOVOFinds on eBay. A simple editorial site with style inspiration, saved ideas, clear seller links, and subtle mobile feedback.
 
-## What's included
+## Shopping model
 
-- Homepage with local editorial imagery, category collections, featured pieces, brand story, and full footer.
-- Dedicated Shirts, Hoodies, Pants, Socks, and all-products pages.
-- Seven product detail pages with sizes, size guide, product information, and related pieces.
-- Product search, price/name sorting, saved pieces, and empty states.
-- Persistent shopping bag with quantity controls, removal, totals, and a checkout link to EVOVOFinds on eBay.
-- Brand story, store information, sizing, privacy, shipping/returns status, and 404 page.
-- Responsive mobile navigation, accessible native dialogs, keyboard controls, and reduced-motion support.
-- Static builds for Vercel, Netlify, and Sites. No runtime dependencies or environment variables required for the preview.
+Real purchases happen at https://www.ebay.com/usr/evovofinds. The destination is defined as `EBAY_STORE_URL` in `catalog.js`.
 
-## Run
+- Prominent eBay links appear in the header, homepage, style notes, and help pages.
+- `/checkout/` redirects to the eBay seller page, including without JavaScript.
+- Style images are clearly labeled references, not seller inventory. No invented prices, stock, size availability, or checkout totals are displayed.
+- There is no on-site cart, payment form, account, or order submission. Existing saved style ideas remain available on the same device.
+- Shipping, condition, sizes, prices, returns, messages, payments, and orders are handled through the actual eBay listings.
+- No ratings, testimonials, registration marks, or seller guarantees are fabricated.
 
-Node.js 20+ and Python 3 are required for the supplied local preview command.
+## Interaction details
+
+`interactions.js` adds a 7ms vibration on trusted intentional taps for browsers with the Vibration API and a coarse pointer. It never vibrates on page load or scrolling. Users can turn tap feedback off using the footer switch; the preference persists on their device. Reduced-motion preferences disable haptics and motion. Unsupported browsers, including iPhone Safari, use the small visual press effect without vibration.
+
+Press states, gentle image hover transitions, and one-time section reveals are progressive enhancements. Unsupported JavaScript or IntersectionObserver does not hide content. Fonts and images are served locally.
+
+## Local development
+
+Requires Node.js 20+ and Python 3 for the included preview command.
 
 ```sh
 npm run dev
@@ -27,34 +33,26 @@ npm run check
 npm run build
 ```
 
-The build emits 17 HTML pages plus a 404 page into `dist/`. Every product/category URL works when loaded directly; no SPA rewrite is needed.
+The build emits the homepage, category pages, seven style notes, saved ideas, about/help pages, the checkout redirect, and a 404 page into `dist/`. URLs load directly without a single-page-app rewrite.
 
-## Verification
+## Browser checks
 
-The integration test requires Python Playwright and Chromium. With the local preview running:
+With Python Playwright and Chromium installed and the local preview running:
 
 ```sh
 npm test
 ```
 
-`tests/storefront.py` tests desktop/mobile navigation, search, sorting, product sizing, cart quantity/totals/removal, reload persistence, saved items, empty states, the eBay checkout handoff, and the 404 page. Chromium is expected at `/usr/bin/chromium` unless the test configuration is adapted.
+The tests cover honest content, categories/search/sorting, saved-idea persistence, mobile navigation, responsive overflow, the eBay handoff, progressive haptics and settings, and reduced-motion behavior. Set `EVOVO_BASE_URL` to test a deployed URL. Chromium is expected at `/usr/bin/chromium`.
 
 ## Hosting
 
-**Vercel:** Import `TurboTwitch0/TurboClothes`. Included `vercel.json` uses `npm run build` and `dist`.
+Production: https://evovo.vercel.app
 
-**Netlify:** Import the same repository. Included `netlify.toml` sets the build and publish directory.
+Vercel project: `evovo`, team: `turbo-twitch`, repository: `TurboTwitch0/TurboClothes`.
 
-**Sites:** `.openai/hosting.json` retains the existing Site identity. Publishing requires the corresponding Sites source repository to contain the exact reviewed commit.
+`vercel.json` uses `npm run build` and `dist/`. GitHub pushes to main trigger production builds. `.vercelignore` excludes local credentials and tooling. `netlify.toml` also supports the same static build. `.openai/hosting.json` preserves the earlier Sites identity; Vercel is the current hosting target.
 
-**Squarespace:** This is a standalone static storefront. Squarespace doesn't directly import a GitHub static site as a native Commerce store. Moving to Squarespace requires a connected Squarespace account, its real product catalog, and a Squarespace-native implementation or external link. This repository does not claim a Squarespace connection.
+## Content
 
-## Purchasing through eBay
-
-The checkout button opens https://www.ebay.com/usr/evovofinds in the same tab. The existing `/checkout/` route also redirects there, including with JavaScript disabled. The destination is defined once as `EBAY_STORE_URL` in `catalog.js`.
-
-This is a seller-page handoff, not a direct eBay cart integration. The EVOVO bag stays on this device and is not transferred. Customers select and purchase the real items from current eBay listings. Availability, final prices, shipping, taxes, returns, and payments are handled on eBay. This site does not collect payment details or submit orders.
-
-The on-site product photography and prices remain illustrative until the owner supplies the final catalog.
-
-See `catalog.js` for sample product data and `assets-manifest.json` for source-image references. Stock imagery is illustrative and is not represented as the merchant's actual clothing. Bags and saved items are stored only on the visitor's device. No newsletter, account, or contact form pretends to submit data.
+`catalog.js` contains editorial ideas, not a live inventory feed. Source photographs are listed in `assets-manifest.json`; the EVOVOFinds avatar was generated for the brand in this conversation. The real clothing photos and product data can be added when provided by the owner. Saved ideas and tap-feedback preferences are local to the visitor's browser and can be cleared from the help page.

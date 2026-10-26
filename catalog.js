@@ -1,14 +1,12 @@
 export const EBAY_STORE_URL = 'https://www.ebay.com/usr/evovofinds';
 export const categories = ['Shirts', 'Hoodies', 'Pants', 'Socks'];
-// Preview catalog. Replace with the merchant's real catalog before opening checkout.
+// Editorial style references. These are not seller inventory or purchasable product records.
 export const products = [
-  {id:'core-tee',name:'Core Tee',category:'Shirts',color:'Chalk',hex:'#e6e4df',price:45,image:'tee-plain-white.jpg',tag:'THE DAILY ROTATION',fit:'Relaxed',description:'The starting point for every rotation. A clean crew neck and an easy silhouette with room to move.'},
-  {id:'daily-hoodie',name:'Daily Hoodie',category:'Hoodies',color:'Heather grey',hex:'#969696',price:95,image:'hoodie-back-grey.jpg',tag:'CORE COLLECTION',fit:'Relaxed',description:'An everyday layer with a quiet presence. An easy hooded silhouette for early starts and late finishes.'},
-  {id:'straight-pant',name:'Straight Pant',category:'Pants',color:'Black',hex:'#262626',price:85,image:'pants-black.jpg',tag:'YOUR NEW UNIFORM',fit:'Straight',description:'A strong line from waist to ankle. The foundation of a considered everyday uniform.'},
-  {id:'crew-socks',name:'Core Crew Socks',category:'Socks',color:'White',hex:'#e8e8e3',price:20,image:'socks-plain.jpg',tag:'FINISH THE FIT',fit:'One size',description:'The detail that makes the look yours. Plain crew socks to bring a clean finish to the everyday.'},
-  {id:'graphic-tee',name:'Essential Tee',category:'Shirts',color:'Black',hex:'#242424',price:50,image:'tee-plain-black.jpg',tag:'MAKE A STATEMENT',fit:'Relaxed',description:'Wear your own point of view. A clean black tee gives a familiar everyday shape a new attitude.'},
-  {id:'studio-layer',name:'Studio Layer',category:'Hoodies',color:'Off-white',hex:'#ddd9cf',price:105,image:'hoodie-white.jpg',tag:'LAYER YOUR WAY',fit:'Relaxed',description:'An easy layer to take you through the day. Style it with a clean tee and your favorite everyday pants.'},
-  {id:'off-duty-pant',name:'Off-Duty Pant',category:'Pants',color:'Olive',hex:'#696b50',price:90,image:'pants-olive.jpg',tag:'OFF THE CLOCK',fit:'Straight',description:'A lighter expression of the everyday trouser. A relaxed look with a deliberate finish.'},
+  {id:'core-tee', name:'The everyday white tee', category:'Shirts', color:'White', image:'tee-plain-white.jpg', description:'A plain white tee is an easy starting point. Pair a simple shape with dark denim or a lighter trouser; let the contrast do the work.'},
+  {id:'daily-hoodie', name:'An easy grey layer', category:'Hoodies', color:'Grey', image:'hoodie-back-grey.jpg', description:'Heather grey sits comfortably beside black, cream, and olive. A hoodie can bring a softer feel to a clean everyday outfit.'},
+  {id:'straight-pant', name:'Keep it dark', category:'Pants', color:'Black', image:'pants-black.jpg', description:'Black denim makes a useful base for a lighter top. Try a white tee and simple footwear, or keep the whole outfit tonal.'},
+  {id:'crew-socks', name:'The finishing detail', category:'Socks', color:'White', image:'socks-plain.jpg', description:'A pair of white crew socks can tie a casual look together. Think about how the length works with your trousers and shoes.'},
+  {id:'graphic-tee', name:'Back to black', category:'Shirts', color:'Black', image:'tee-plain-black.jpg', description:'A black tee works as a quiet base for different layers. Wear it on its own or under a lighter overshirt for a little contrast.'},
+  {id:'studio-layer', name:'A softer neutral', category:'Hoodies', color:'Cream', image:'hoodie-white.jpg', description:'Cream and off-white bring a warmer feel to casual layers. Pair them with brown, olive, or washed black for an easy combination.'},
+  {id:'off-duty-pant', name:'A little olive', category:'Pants', color:'Olive', image:'pants-olive.jpg', description:'Olive is a useful alternative to black or blue. Keep the rest of the outfit simple with a white tee or a neutral layer.'}
 ];
-export const sizesFor = p => p.category === 'Socks' ? ['One size'] : ['S','M','L','XL'];
-export const money = n => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(n);
