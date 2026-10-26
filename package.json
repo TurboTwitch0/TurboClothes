@@ -1,1 +1,12 @@
-{"name":"turbo-clothes","private":true,"version":"1.0.0","scripts":{"build":"node build.mjs","dev":"python3 -m http.server 3000"}}
+{
+  "name": "evovo",
+  "private": true,
+  "version": "2.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "dev": "node build.mjs && python3 -m http.server 3000 --directory dist",
+    "check": "node --check app.js && node --check catalog.js && node --check build.mjs",
+    "test": "python3 tests/storefront.py"
+  }
+}

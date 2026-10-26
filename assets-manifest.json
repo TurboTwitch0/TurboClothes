@@ -1,0 +1,82 @@
+[
+  {
+    "path": "assets/hero-dark.jpg",
+    "description": "Men\u2019s black hoodie, moody sunset portrait",
+    "source": "https://unsplash.com/photos/a-man-in-a-black-hoodie-standing-in-the-dark-11oaSaiV65U",
+    "width": 1800,
+    "height": 2700,
+    "placeholder": true
+  },
+  {
+    "path": "assets/hero.jpg",
+    "description": "Men\u2019s architectural streetwear editorial",
+    "source": "https://images.unsplash.com/photo-1488161628813-04466f872be2",
+    "width": 1800,
+    "height": 2250,
+    "placeholder": true
+  },
+  {
+    "path": "assets/editorial.jpg",
+    "description": "Man in a denim jacket, streetwear editorial",
+    "source": "https://images.unsplash.com/photo-1516257984-b1b4d707412e",
+    "width": 1300,
+    "height": 1950,
+    "placeholder": true
+  },
+  {
+    "path": "assets/tee-plain-black.jpg",
+    "description": "Plain black crew neck T-shirt on male torso",
+    "source": "https://unsplash.com/photos/man-wearing-black-crew-neck-t-shirt-3qqiMT2LdR8",
+    "width": 1000,
+    "height": 667,
+    "placeholder": true
+  },
+  {
+    "path": "assets/tee-plain-white.jpg",
+    "description": "Plain white crew neck T-shirt on male torso",
+    "source": "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab",
+    "width": 800,
+    "height": 800,
+    "placeholder": true
+  },
+  {
+    "path": "assets/hoodie-back-grey.jpg",
+    "description": "Grey pullover hoodie, rear view outdoors",
+    "source": "https://images.unsplash.com/photo-1556821840-3a63f95609a7",
+    "width": 800,
+    "height": 1200,
+    "placeholder": true
+  },
+  {
+    "path": "assets/hoodie-white.jpg",
+    "description": "Warm off-white hoodie on male torso, subtle chest motif",
+    "source": "https://unsplash.com/photos/a-man-in-a-hoodie-standing-on-a-city-street-IGrpkZBFiHU",
+    "width": 1000,
+    "height": 563,
+    "placeholder": true
+  },
+  {
+    "path": "assets/pants-black.jpg",
+    "description": "Black denim pants laid flat",
+    "source": "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80",
+    "width": 800,
+    "height": 1169,
+    "placeholder": true
+  },
+  {
+    "path": "assets/pants-olive.jpg",
+    "description": "Olive slim trousers worn with white sneakers",
+    "source": "https://images.unsplash.com/photo-1473966968600-fa801b869a1a",
+    "width": 800,
+    "height": 1200,
+    "placeholder": true
+  },
+  {
+    "path": "assets/socks-plain.jpg",
+    "description": "Plain white ribbed crew socks, worn on feet",
+    "source": "https://unsplash.com/photos/person-wearing-white-socks-on-white-textile-QSAvb9eXvKA",
+    "width": 1800,
+    "height": 1010,
+    "placeholder": true
+  }
+]
