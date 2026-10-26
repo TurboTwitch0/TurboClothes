@@ -1,3 +1,4 @@
+export const EBAY_STORE_URL = 'https://www.ebay.com/usr/evovofinds';
 export const categories = ['Shirts', 'Hoodies', 'Pants', 'Socks'];
 // Preview catalog. Replace with the merchant's real catalog before opening checkout.
 export const products = [

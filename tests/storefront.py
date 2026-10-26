@@ -72,16 +72,33 @@ with sync_playwright() as p:
     expect(page.locator('.cart-summary .totals strong')).to_have_text('$90')
     page.get_by_role('button', name='Decrease quantity of Core Tee', exact=True).click()
     expect(page.locator('.cart-summary .totals strong')).to_have_text('$45')
-    page.locator('.cart-summary a').click()
-    expect(page.locator('.checkout-message')).to_contain_text("Checkout isn't open yet.")
-    expect(page.locator('.checkout-message')).to_contain_text('No charge has been made')
-    page.get_by_role('button', name='Edit your bag', exact=False).click()
+    # Intercept only eBay: exercise the real link without depending on third-party bot checks.
+    ebay_url = 'https://www.ebay.com/usr/evovofinds'
+    page.route('https://www.ebay.com/**', lambda route: route.fulfill(status=200, content_type='text/html', body='<h1>External destination intercepted</h1>'))
+    expect(page.get_by_role('link', name='Checkout on eBay')).to_have_attribute('href', ebay_url)
+    expect(page.locator('.cart-summary')).to_contain_text('Your EVOVO bag does not transfer.')
+    page.get_by_role('link', name='Checkout on eBay').click()
+    expect(page).to_have_url(ebay_url)
+    # The handoff preserves the local bag rather than pretending to place an order.
+    page.goto(BASE + '/shop/')
+    expect(page.locator('#bag-count')).to_have_text('1')
+    page.goto(BASE + '/checkout/')
+    expect(page).to_have_url(ebay_url)
+    page.goto(BASE + '/shop/')
+    page.locator('#cart-open').click()
     page.get_by_role('button', name='Remove Core Tee', exact=True).click()
     expect(page.locator('#bag-count')).to_have_text('0')
     expect(page.locator('#cart-content')).to_contain_text('Your bag is empty')
     page.get_by_role('button', name='Close bag', exact=True).click()
     page.goto(BASE + '/checkout/')
-    expect(page.locator('main')).to_contain_text('Your bag is empty')
+    expect(page).to_have_url(ebay_url)
+    # The static checkout route also works without JavaScript.
+    no_js = browser.new_context(java_script_enabled=False)
+    no_js.route('https://www.ebay.com/**', lambda route: route.fulfill(status=200, content_type='text/html', body='<h1>External destination intercepted</h1>'))
+    no_js_page = no_js.new_page()
+    no_js_page.goto(BASE + '/checkout/')
+    expect(no_js_page).to_have_url(ebay_url)
+    no_js.close()
 
     # The built 404 shell recognizes invalid application routes.
     response = page.goto(BASE + '/404.html')
@@ -111,4 +128,4 @@ with sync_playwright() as p:
             assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth"), (width, route)
     assert not errors, errors
     browser.close()
-    print('PASS: desktop/mobile navigation, all categories, search/sort, size validation, cart edits/totals, persistence, saved pieces, truthful checkout, 404 and image/layout checks')
+    print('PASS: desktop/mobile navigation, all categories, search/sort, size validation, cart edits/totals, persistence, saved pieces, eBay checkout handoff (including no JS), 404 and image/layout checks')

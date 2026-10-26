@@ -8,7 +8,7 @@ A complete responsive men's streetwear storefront, rebuilt from the original Tur
 - Dedicated Shirts, Hoodies, Pants, Socks, and all-products pages.
 - Seven product detail pages with sizes, size guide, product information, and related pieces.
 - Product search, price/name sorting, saved pieces, and empty states.
-- Persistent shopping bag with quantity controls, removal, totals, and an order preview.
+- Persistent shopping bag with quantity controls, removal, totals, and a checkout link to EVOVOFinds on eBay.
 - Brand story, store information, sizing, privacy, shipping/returns status, and 404 page.
 - Responsive mobile navigation, accessible native dialogs, keyboard controls, and reduced-motion support.
 - Static builds for Vercel, Netlify, and Sites. No runtime dependencies or environment variables required for the preview.
@@ -37,7 +37,7 @@ The integration test requires Python Playwright and Chromium. With the local pre
 npm test
 ```
 
-`tests/storefront.py` tests desktop/mobile navigation, search, sorting, product sizing, cart quantity/totals/removal, reload persistence, saved items, empty states, checkout status, and the 404 page. Chromium is expected at `/usr/bin/chromium` unless the test configuration is adapted.
+`tests/storefront.py` tests desktop/mobile navigation, search, sorting, product sizing, cart quantity/totals/removal, reload persistence, saved items, empty states, the eBay checkout handoff, and the 404 page. Chromium is expected at `/usr/bin/chromium` unless the test configuration is adapted.
 
 ## Hosting
 
@@ -49,15 +49,12 @@ npm test
 
 **Squarespace:** This is a standalone static storefront. Squarespace doesn't directly import a GitHub static site as a native Commerce store. Moving to Squarespace requires a connected Squarespace account, its real product catalog, and a Squarespace-native implementation or external link. This repository does not claim a Squarespace connection.
 
-## Store launch status
+## Purchasing through eBay
 
-This is a working **preview storefront**, not a merchant account. No payments or real orders are accepted, and no order success is simulated. Checkout clearly explains that the merchant connection is pending. A Shopify connection was suggested; Squarespace was requested but no integration is available in this session.
+The checkout button opens https://www.ebay.com/usr/evovofinds in the same tab. The existing `/checkout/` route also redirects there, including with JavaScript disabled. The destination is defined once as `EBAY_STORE_URL` in `catalog.js`.
 
-Before selling:
+This is a seller-page handoff, not a direct eBay cart integration. The EVOVO bag stays on this device and is not transferred. Customers select and purchase the real items from current eBay listings. Availability, final prices, shipping, taxes, returns, and payments are handled on eBay. This site does not collect payment details or submit orders.
 
-1. Connect the chosen merchant account and its real catalog/checkout.
-2. Replace sample photography and prices with the owner's clothing photos and approved product data.
-3. Confirm inventory, sizes, composition, care, tax, delivery regions/rates, returns terms, and support contact.
-4. Test a provider test-mode purchase and fulfillment flow before enabling live checkout.
+The on-site product photography and prices remain illustrative until the owner supplies the final catalog.
 
 See `catalog.js` for sample product data and `assets-manifest.json` for source-image references. Stock imagery is illustrative and is not represented as the merchant's actual clothing. Bags and saved items are stored only on the visitor's device. No newsletter, account, or contact form pretends to submit data.
