@@ -1,0 +1,10 @@
+.git
+.vercel
+.env*
+.openai
+.netlify
+dist
+node_modules
+tests
+README.md
+assets-manifest.json
