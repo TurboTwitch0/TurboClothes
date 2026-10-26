@@ -103,6 +103,12 @@ with sync_playwright() as p:
     expect(page.locator('#size-dialog table')).to_be_visible()
     page.keyboard.press('Escape')
     expect(page.locator('#size-dialog')).not_to_be_visible()
+    # Narrow phones and tablet grids must not gain horizontal scrolling.
+    for width in [320, 375, 768, 1024]:
+        page.set_viewport_size({"width": width, "height": 900})
+        for route in ["/shop/", "/products/core-tee/"]:
+            page.goto(BASE + route, wait_until="networkidle")
+            assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth"), (width, route)
     assert not errors, errors
     browser.close()
     print('PASS: desktop/mobile navigation, all categories, search/sort, size validation, cart edits/totals, persistence, saved pieces, truthful checkout, 404 and image/layout checks')
