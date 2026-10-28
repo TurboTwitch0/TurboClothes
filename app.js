@@ -4,6 +4,12 @@ import '/interactions.js';
 const $ = selector => document.querySelector(selector);
 const escapeHTML = value => String(value).replace(/[&<>"']/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character]));
 const arrow = '<svg class="arrow-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19 19 5M5 5h14v14"/></svg>';
+
+function matchesProduct(product, query) {
+  const text = `${product.name} ${product.category} ${product.color} ${product.fit || ''}`.toLowerCase();
+  return query.trim().toLowerCase().split(/\s+/).every(term => text.includes(term));
+}
+
 const icons = {
   search: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.7"/><path d="m16 16 5 5"/></svg>',
   heart: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.7c-2.3-2.2-6-1.5-8.8 1.5C9.2 3.2 5.5 2.5 3.2 4.7c-2.4 2.4-1.6 6.5.8 9L12 21l8-7.3c2.4-2.5 3.2-6.6.8-9z"/></svg>',
@@ -163,7 +169,7 @@ function filterProducts() {
   const source = products.filter(p => !isSavedPage || boardIds().includes(p.id));
   let list = source.filter(p => currentCategory === 'All' || p.category === currentCategory);
   const q = query.trim().toLowerCase();
-  if (q) list = list.filter(p => `${p.name} ${p.category} ${p.color}`.toLowerCase().includes(q));
+  if (q) list = list.filter(p => matchesProduct(p, q));
   if (sort === 'name') list.sort((a,b) => a.name.localeCompare(b.name));
   $('#results-count').textContent = `${list.length} ${list.length === 1 ? 'idea' : 'ideas'}${q ? ' for “' + query + '”' : ''}`;
   const emptyBoard = isSavedPage && !source.length;
@@ -245,7 +251,7 @@ function updateSaved(write = true) {
 
 function searchResults() {
   const q = $('#search-input').value.trim().toLowerCase();
-  const matches = products.filter(p => !q || `${p.name} ${p.category} ${p.color}`.toLowerCase().includes(q));
+  const matches = products.filter(p => !q || matchesProduct(p, q));
   const list = matches.slice(0,5);
   $('#search-results').innerHTML = `<p class="search-results-label">${q ? 'STYLE IDEAS' : 'EXPLORE AN IDEA'}</p>` + (list.length ? list.map(p => `<a class="search-result" href="${productURL(p)}"><img src="${asset(p)}" alt=""><div><strong>${p.name}</strong><p>${p.category} · Style reference</p></div>${arrow}</a>`).join('') : `<div class="search-empty">${stateIllustration()}<p>No ideas found yet. Try shirts, hoodies, pants, or socks.</p></div>`) + `<a class="search-view-all" href="/shop/${q ? '?q=' + encodeURIComponent($('#search-input').value.trim()) : ''}">${q ? 'See all matching ideas' : 'Explore all ' + products.length + ' ideas'} ${arrow}</a>`;
 }
