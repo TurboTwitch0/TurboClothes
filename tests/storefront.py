@@ -4,6 +4,7 @@ Requires Python Playwright and Chromium at /usr/bin/chromium.
 """
 import os
 import re
+from urllib.parse import parse_qs, urlparse
 from playwright.sync_api import sync_playwright, expect
 
 BASE = os.environ.get('EVOVO_BASE_URL', 'http://localhost:3000').rstrip('/')
@@ -72,6 +73,12 @@ with sync_playwright() as p:
         page.keyboard.press('Escape')
     expect(page.locator('#search-dialog')).not_to_be_visible()
     expect(page.locator('#search-open')).to_be_focused()
+    page.locator('#search-open').click()
+    page.locator('#search-input').fill('black')
+    page.locator('.search-view-all').click()
+    expect(page).to_have_url(re.compile(r'q=black'))
+    expect(page.locator('#collection-query')).to_have_value('black')
+    expect(page.locator('#collection-grid .product-card')).to_have_count(2)
 
     for category in ['Shirts', 'Hoodies', 'Pants', 'Socks']:
         page.goto(BASE + '/shop/' + category.lower() + '/', wait_until='networkidle')
@@ -133,16 +140,150 @@ with sync_playwright() as p:
         for route in ['/', '/shop/', '/products/core-tee/', '/help/']:
             page.goto(BASE + route, wait_until='networkidle')
             assert_fits(page)
+            if width <= 760:
+                expect(page.locator('.mobile-dock')).to_be_visible()
+                page.evaluate('scrollTo(0, document.documentElement.scrollHeight)')
+                assert page.locator('.footer-bottom').evaluate('(el) => el.getBoundingClientRect().bottom <= document.querySelector(".mobile-dock").getBoundingClientRect().top + 1')
+            else:
+                expect(page.locator('.mobile-dock')).not_to_be_visible()
     page.set_viewport_size({'width': 390, 'height': 844})
+    page.goto(BASE + '/', wait_until='networkidle')
+    expect(page.locator('.mobile-dock')).to_be_visible()
+    page.locator('[data-dock="saved"]').click()
+    expect(page.locator('h1')).to_contain_text('Keep the good ideas.')
+    expect(page.locator('[data-dock="saved"]')).to_have_attribute('aria-current', 'page')
     page.goto(BASE + '/', wait_until='networkidle')
     page.get_by_role('button', name='Open navigation', exact=True).click()
     expect(page.locator('#menu-dialog')).to_be_visible()
     page.locator('#menu-dialog').get_by_role('link', name='Hoodies', exact=True).click()
     expect(page.locator('h1')).to_contain_text('Hoodies')
     page.goto(BASE + '/', wait_until='networkidle')
-    reveal_and_capture(page, '/workspace/evovo-credible-mobile.png')
+    reveal_and_capture(page, '/workspace/evovo-pass-mobile.png')
+    page.evaluate('scrollTo(0, document.documentElement.scrollHeight)')
+    assert page.locator('.footer-bottom').evaluate('(el) => el.getBoundingClientRect().bottom <= document.querySelector(".mobile-dock").getBoundingClientRect().top + 1')
+    page.locator('.mobile-dock .dock-ebay').click()
+    expect(page).to_have_url(EBAY)
     assert not errors, errors
     context.close()
+
+    # A saved board is useful across filters, reloads, tabs, and explicit sharing.
+    board_context = browser.new_context(viewport={'width': 1440, 'height': 1000})
+    board_context.add_init_script("""
+        window.__copied = null;
+        window.__clipboardFails = false;
+        Object.defineProperty(navigator, 'clipboard', {configurable: true, value: {
+            writeText: async text => {
+                if (window.__clipboardFails) throw new Error('Test clipboard denial');
+                window.__copied = text;
+            }
+        }});
+        window.__savedWrites = 0;
+        const realSetItem = Storage.prototype.setItem;
+        Storage.prototype.setItem = function(key, value) {
+            if (key === 'evovo.saved') window.__savedWrites++;
+            return realSetItem.call(this, key, value);
+        };
+    """)
+    board = board_context.new_page()
+    board_errors = []
+    board.on('pageerror', lambda error: board_errors.append(str(error)))
+
+    def board_count(expected):
+        expect(board.locator('[data-saved-count]')).to_have_text([str(expected), str(expected)])
+        for link in board.locator('[data-saved-nav]').all():
+            expect(link).to_have_attribute('aria-label', f'Saved ideas ({expected})')
+
+    board.goto(BASE + '/', wait_until='networkidle')
+    board_count(0)
+    for idea, total in [('core-tee', 1), ('daily-hoodie', 2), ('off-duty-pant', 3)]:
+        board.goto(BASE + '/products/' + idea + '/', wait_until='networkidle')
+        board.locator('.detail-save').click()
+        board_count(total)
+    board.reload(wait_until='networkidle')
+    board_count(3)
+    board.goto(BASE + '/saved/', wait_until='networkidle')
+    expect(board.locator('#collection-grid .product-card')).to_have_count(3)
+    board.locator('.save-button[data-save="daily-hoodie"]').click()
+    board_count(2)
+    board.locator('[data-undo-save="daily-hoodie"]').click()
+    board_count(3)
+    expect(board.locator('#collection-grid .product-card')).to_have_count(3)
+    board.locator('[data-category-link="Shirts"]').click()
+    expect(board).to_have_url(re.compile(r'category=Shirts'))
+    expect(board.locator('#collection-grid .product-card')).to_have_count(1)
+    board.locator('#collection-query').fill('black')
+    expect(board.locator('#collection-grid .product-card')).to_have_count(0)
+    expect(board.locator('#collection-grid')).to_contain_text('Your ideas are still here.')
+    board_count(3)
+    board.locator('[data-reset-filters]').click()
+    expect(board.locator('#collection-grid .product-card')).to_have_count(3)
+    expect(board.locator('#collection-query')).to_have_value('')
+    expect(board.locator('[data-category-link="All"]')).to_have_attribute('aria-current', 'page')
+    board.locator('#product-sort').select_option('name')
+    expect(board).to_have_url(re.compile(r'sort=name'))
+    board.reload(wait_until='networkidle')
+    expect(board.locator('#product-sort')).to_have_value('name')
+    names = board.locator('.product-info a').all_text_contents()
+    assert names == sorted(names, key=str.casefold), names
+    board.go_back(wait_until='networkidle')
+    expect(board.locator('#product-sort')).to_have_value('editorial')
+
+    # Copy shares the whole board, even when only one idea is visible.
+    board.locator('#collection-query').fill('olive')
+    expect(board.locator('#collection-grid .product-card')).to_have_count(1)
+    board.locator('[data-copy-board]').click()
+    expect(board.locator('#toast')).to_contain_text('Board link copied')
+    shared_url = board.evaluate('window.__copied')
+    shared_query = parse_qs(urlparse(shared_url).query)
+    assert set(shared_query['board'][0].split(',')) == {'core-tee', 'daily-hoodie', 'off-duty-pant'}
+    assert 'q' not in shared_query and 'category' not in shared_query
+    board.evaluate('window.__clipboardFails = true')
+    board.locator('[data-copy-board]').click()
+    expect(board.locator('#share-dialog')).to_be_visible()
+    expect(board.locator('#board-link')).to_have_value(shared_url)
+    expect(board.locator('#board-link')).to_have_attribute('readonly', '')
+    expect(board.locator('#board-link')).to_be_focused()
+    board.keyboard.press('Escape')
+    expect(board.locator('#share-dialog')).not_to_be_visible()
+
+    # A recipient keeps their existing ideas until explicitly importing a board.
+    board.evaluate("localStorage.setItem('evovo.saved', JSON.stringify(['crew-socks']))")
+    board.goto(BASE + '/saved/?board=core-tee,daily-hoodie,core-tee,not-a-real-id', wait_until='networkidle')
+    board_count(1)
+    expect(board.locator('#collection-grid .product-card')).to_have_count(2)
+    assert board.evaluate("JSON.parse(localStorage.getItem('evovo.saved'))") == ['crew-socks']
+    board.locator('[data-import-board]').click()
+    board_count(3)
+    assert set(board.evaluate("JSON.parse(localStorage.getItem('evovo.saved'))")) == {'crew-socks', 'core-tee', 'daily-hoodie'}
+    expect(board.locator('[data-import-board]')).to_be_disabled()
+    expect(board.locator('[data-import-board]')).to_have_text('All ideas saved')
+    board.goto(BASE + '/saved/?board=unknown-id', wait_until='networkidle')
+    expect(board.locator('#collection-grid')).to_contain_text('No ideas in this link.')
+    expect(board.locator('[data-copy-board]')).to_be_disabled()
+    expect(board.locator('[data-import-board]')).to_be_disabled()
+    board_count(3)
+    board.goto(BASE + '/saved/', wait_until='networkidle')
+    expect(board.locator('#collection-grid .product-card')).to_have_count(3)
+
+    # Actual storage events update other open tabs without writing back.
+    other = board_context.new_page()
+    other.goto(BASE + '/', wait_until='networkidle')
+    before_writes = board.evaluate('window.__savedWrites')
+    other.evaluate("localStorage.setItem('evovo.saved', JSON.stringify(['core-tee']))")
+    board_count(1)
+    expect(board.locator('#collection-grid .product-card')).to_have_count(1)
+    assert board.evaluate('window.__savedWrites') == before_writes
+    other.evaluate('localStorage.clear()')
+    board_count(0)
+    expect(board.locator('#collection-grid')).to_contain_text('Start your moodboard.')
+    expect(board.locator('[data-copy-board]')).to_be_disabled()
+    other.close()
+    board.goto(BASE + '/saved/?board=core-tee,daily-hoodie,off-duty-pant', wait_until='networkidle')
+    board.set_viewport_size({'width': 390, 'height': 844})
+    assert_fits(board)
+    board.screenshot(path='/workspace/evovo-pass-saved.png', full_page=True, animations='disabled')
+    assert not board_errors, board_errors
+    board_context.close()
 
     # Haptics are a small enhancement: mobile intent only, never on load/scroll.
     touch = browser.new_context(viewport={'width': 390, 'height': 844}, is_mobile=True, has_touch=True)
@@ -201,4 +342,4 @@ with sync_playwright() as p:
     expect(unsupported_page.locator('#search-dialog')).to_be_visible()
     unsupported.close()
     browser.close()
-    print('PASS: honest style references, search/sort, saved ideas, clear preferences, eBay handoff, mobile navigation/layout, and progressive haptics (toggle, no load/scroll pulse, reduced motion, desktop/unsupported fallback)')
+    print('PASS: honest showroom and eBay handoff; mobile dock/live counts; saved-board filters, undo, sharing/import, clipboard fallback and cross-tab sync; responsive layouts and progressive haptics')

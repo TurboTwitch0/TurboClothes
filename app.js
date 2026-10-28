@@ -10,7 +10,8 @@ const icons = {
   menu: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h18M3 16h18"/></svg>'
 };
 $('#search-open').innerHTML = icons.search;
-$('.saved-link').innerHTML = icons.heart;
+$('.saved-link').innerHTML = icons.heart + '<span class="saved-count" data-saved-count aria-hidden="true">0</span>';
+document.querySelectorAll('[data-heart-icon]').forEach(element => element.innerHTML = icons.heart);
 $('#menu-open').innerHTML = icons.menu;
 $('#year').textContent = new Date().getFullYear();
 document.querySelectorAll('[data-arrow]').forEach(element => element.innerHTML = arrow);
@@ -23,8 +24,8 @@ function readSaved() {
 }
 let saved = readSaved();
 let toastTimer;
-function toast(message) {
-  $('#toast').textContent = message;
+function toast(message, undoId = '') {
+  $('#toast').innerHTML = `<span>${escapeHTML(message)}</span>${undoId ? `<button data-undo-save="${undoId}">Undo</button>` : ''}`;
   $('#toast').hidden = false;
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => $('#toast').hidden = true, 2400);
@@ -69,23 +70,85 @@ const path = location.pathname.replace(/\/+$/, '') || '/';
 const isSavedPage = path === '/saved';
 const isCatalog = path === '/shop' || path.startsWith('/shop/') || isSavedPage;
 let currentCategory = 'All';
-let query = new URLSearchParams(location.search).get('q') || '';
+let query = '';
 let sort = 'editorial';
+let sharedIds = null;
+function readCatalogState() {
+  const params = new URLSearchParams(location.search);
+  query = params.get('q') || '';
+  sort = params.get('sort') === 'name' ? 'name' : 'editorial';
+  if (isSavedPage) {
+    currentCategory = categories.includes(params.get('category')) ? params.get('category') : 'All';
+    sharedIds = params.has('board') ? [...new Set(params.get('board').split(',').filter(id => products.some(p => p.id === id)))] : null;
+  }
+}
+readCatalogState();
+const boardIds = () => sharedIds === null ? saved : sharedIds;
+function categoryURL(category) {
+  const url = new URL(isSavedPage ? '/saved/' : '/shop/' + (category === 'All' ? '' : category.toLowerCase() + '/'), location.origin);
+  if (isSavedPage && category !== 'All') url.searchParams.set('category', category);
+  if (isSavedPage && sharedIds !== null) url.searchParams.set('board', sharedIds.join(','));
+  if (query) url.searchParams.set('q', query);
+  if (sort !== 'editorial') url.searchParams.set('sort', sort);
+  return url.pathname + url.search;
+}
+function saveCatalogState(push = false) {
+  const url = new URL(location.href);
+  query ? url.searchParams.set('q', query) : url.searchParams.delete('q');
+  sort !== 'editorial' ? url.searchParams.set('sort', sort) : url.searchParams.delete('sort');
+  if (isSavedPage) currentCategory !== 'All' ? url.searchParams.set('category', currentCategory) : url.searchParams.delete('category');
+  history[push ? 'pushState' : 'replaceState'](null, '', url);
+  document.querySelectorAll('[data-category-link]').forEach(link => link.href = categoryURL(link.dataset.categoryLink));
+}
 function catalogPage(category = 'All', savedPage = false) {
-  currentCategory = category;
-  return `<div class="breadcrumbs"><a href="/">Home</a><span>/</span><span>${savedPage ? 'Saved ideas' : category === 'All' ? 'Style ideas' : category}</span></div>
-    <section class="catalog-head"><span class="eyebrow">${savedPage ? 'YOUR OWN MOODBOARD' : 'THE STYLE NOTES'}</span><h1>${savedPage ? 'Keep the good ideas.' : category === 'All' ? 'A little inspiration.' : category + ', your way.'}</h1><p>${savedPage ? 'Ideas you saved on this device. Come back to them whenever you need a little inspiration.' : 'A few ways to think about your everyday wardrobe. These are style references, not items listed for sale.'}</p>${ebayButton('Shop current listings', 'text-link')}</section>
-    <section class="catalog-body">${savedPage ? '' : `<div class="catalog-controls"><nav class="category-tabs" aria-label="Style categories">${['All', ...categories].map(c => `<a class="${c === category ? 'active' : ''}" ${c === category ? 'aria-current="page"' : ''} href="/shop/${c === 'All' ? '' : c.toLowerCase() + '/'}">${c === 'All' ? 'All ideas' : c}</a>`).join('')}</nav><label class="sort"><span class="sr-only">Sort style ideas</span><select id="product-sort"><option value="editorial">Our edit</option><option value="name">Name: A to Z</option></select></label></div>`}
-    <div class="results-line"><span id="results-count"></span>${savedPage ? '' : `<form class="inline-search" id="collection-search"><label class="sr-only" for="collection-query">Search style ideas</label><input id="collection-query" type="search" placeholder="Find an idea…" value="${escapeHTML(query)}"><button aria-label="Search ideas">${icons.search}</button></form>`}</div><div class="product-grid" id="collection-grid"></div>${referenceNote}</section>`;
+  if (!savedPage) currentCategory = category;
+  const shared = savedPage && sharedIds !== null;
+  return `<div class="breadcrumbs"><a href="/">Home</a><span>/</span><span>${savedPage ? shared ? 'Shared board' : 'Saved ideas' : category === 'All' ? 'Style ideas' : category}</span></div>
+    <section class="catalog-head"><span class="eyebrow">${savedPage ? shared ? 'A LITTLE INSPIRATION, SHARED' : 'YOUR OWN MOODBOARD' : 'THE STYLE NOTES'}</span><h1>${savedPage ? shared ? 'Good ideas travel.' : 'Keep the good ideas.' : category === 'All' ? 'A little inspiration.' : category + ', your way.'}</h1><p>${savedPage ? shared ? 'Someone shared these style ideas with you. Explore them here, or save them alongside your own favorites.' : 'Your personal edit, kept on this device. Find a look, save it, and share your board when inspiration strikes.' : 'A few ways to think about your everyday wardrobe. These are style references, not items listed for sale.'}</p>
+    ${savedPage ? `<div class="board-actions"><button class="pill" data-copy-board>Copy board link ${arrow}</button>${shared ? '<button class="pill outline" data-import-board>Save these ideas</button><a class="text-link" href="/saved/">My saved ideas</a>' : '<span class="board-local">No account needed · Saved on this device</span>'}</div>` : ebayButton('Shop current listings', 'text-link')}</section>
+    <section class="catalog-body"><div class="catalog-controls"><nav class="category-tabs" aria-label="Style categories">${['All', ...categories].map(c => `<a class="${c === currentCategory ? 'active' : ''}" ${c === currentCategory ? 'aria-current="page"' : ''} data-category-link="${c}" href="${escapeHTML(categoryURL(c))}">${c === 'All' ? 'All ideas' : c}</a>`).join('')}</nav><label class="sort"><span class="sr-only">Sort style ideas</span><select id="product-sort"><option value="editorial" ${sort === 'editorial' ? 'selected' : ''}>Our edit</option><option value="name" ${sort === 'name' ? 'selected' : ''}>Name: A to Z</option></select></label></div>
+    <div class="results-line"><span id="results-count" role="status" aria-live="polite"></span><form class="inline-search" id="collection-search"><label class="sr-only" for="collection-query">Search style ideas</label><input id="collection-query" type="search" placeholder="${savedPage ? 'Search your board…' : 'Find an idea…'}" value="${escapeHTML(query)}"><button aria-label="Search ideas">${icons.search}</button></form></div><div class="product-grid" id="collection-grid"></div>${referenceNote}</section>`;
+}
+function updateBoardActions() {
+  const copy = $('[data-copy-board]');
+  if (copy) copy.disabled = !boardIds().length;
+  const add = $('[data-import-board]');
+  if (add) {
+    const missing = boardIds().filter(id => !saved.includes(id));
+    add.disabled = !missing.length;
+    add.textContent = missing.length ? 'Save these ideas' : boardIds().length ? 'All ideas saved' : 'No ideas to save';
+  }
 }
 function filterProducts() {
-  let list = products.filter(p => (currentCategory === 'All' || p.category === currentCategory) && (!isSavedPage || saved.includes(p.id)));
+  const source = products.filter(p => !isSavedPage || boardIds().includes(p.id));
+  let list = source.filter(p => currentCategory === 'All' || p.category === currentCategory);
   const q = query.trim().toLowerCase();
   if (q) list = list.filter(p => `${p.name} ${p.category} ${p.color}`.toLowerCase().includes(q));
   if (sort === 'name') list.sort((a,b) => a.name.localeCompare(b.name));
   $('#results-count').textContent = `${list.length} ${list.length === 1 ? 'idea' : 'ideas'}${q ? ' for “' + query + '”' : ''}`;
-  $('#collection-grid').innerHTML = list.length ? list.map(card).join('') : `<div class="empty"><h2>${isSavedPage ? 'Start your moodboard.' : 'Try another direction.'}</h2><p>${isSavedPage ? 'Tap the heart on a style idea to keep it here.' : 'No matches this time. Try a category or a different search.'}</p><a href="/shop/" class="pill">Explore style ideas ${arrow}</a></div>`;
+  const emptyBoard = isSavedPage && !source.length;
+  $('#collection-grid').innerHTML = list.length ? list.map(card).join('') : `<div class="empty"><h2>${emptyBoard ? sharedIds === null ? 'Start your moodboard.' : 'No ideas in this link.' : 'Try another direction.'}</h2><p>${emptyBoard ? sharedIds === null ? 'Tap the heart on a style idea to keep it here.' : 'This board link has no recognized style ideas. Explore a few of your own.' : 'Your ideas are still here. Try another search or clear your filters.'}</p>${emptyBoard ? `<a href="/shop/" class="pill">Explore style ideas ${arrow}</a>` : '<button class="pill" data-reset-filters>Clear filters</button>'}</div>`;
+  updateBoardActions();
 }
+function updateSavedCounts() {
+  document.querySelectorAll('[data-saved-count]').forEach(element => element.textContent = saved.length);
+  document.querySelectorAll('[data-saved-nav]').forEach(link => link.setAttribute('aria-label', `Saved ideas (${saved.length})`));
+}
+async function copyBoardLink() {
+  if (!boardIds().length) return;
+  const url = new URL('/saved/', location.origin);
+  url.searchParams.set('board', boardIds().join(','));
+  try {
+    if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable');
+    await navigator.clipboard.writeText(url.href);
+    toast('Board link copied');
+  } catch {
+    $('#board-link').value = url.href;
+    $('#share-dialog').showModal();
+    $('#board-link').select();
+  }
+}
+
 function detail(p) {
   return `<nav class="breadcrumbs" aria-label="Breadcrumb"><a href="/">Home</a><span>/</span><a href="/shop/${p.category.toLowerCase()}/">${p.category}</a><span>/</span><span>Style note</span></nav>
     <article class="product-detail"><div class="detail-image"><img src="${asset(p)}" alt="${p.name}, reference photography"><span class="product-tag">Style reference</span></div><div class="detail-content"><span class="eyebrow">THE STYLE NOTES / ${p.category}</span><h1>${p.name}</h1><p class="detail-copy">${p.description}</p><div class="reference-box"><strong>A little inspiration, not a listing.</strong><p>This photograph is a style reference. It doesn't represent an item available from EVOVOFinds. Check eBay for the actual item photos, prices, sizes, and availability.</p></div>${ebayButton('Browse EVOVOFinds on eBay')}<button class="pill outline detail-save" data-save="${p.id}" aria-pressed="${saved.includes(p.id)}">${icons.heart}<span>${saved.includes(p.id) ? 'Saved to your ideas' : 'Save this idea'}</span></button><details><summary>Shopping, delivery & returns ${arrow}</summary><p>Read the details on the individual eBay listing before buying. Shipping costs, condition, and return terms are shown there. If you have questions, message EVOVOFinds on eBay.</p></details></div></article>
@@ -95,7 +158,7 @@ function about() {
   return `<section class="about-page"><div class="about-image"><img src="/assets/editorial.jpg" alt="Casual menswear style reference"></div><div><span class="eyebrow">EVOVO / EVOVOFINDS</span><h1>A home for<br>your next find.</h1><p>EVOVO is the site. EVOVOFinds is the seller name you'll see on eBay. We wanted a place to share a little clothing inspiration, with a clear route to the actual listings.</p><p>The style notes here are references, not a product catalog. For what's available, see the photos and details on our eBay seller page.</p>${ebayButton()}<a class="text-link" href="/help/">How to shop ${arrow}</a></div></section>`;
 }
 function help() {
-  return `<article class="help-layout"><span class="eyebrow">GOOD TO KNOW</span><h1>Shopping,<br>made clearer.</h1><section class="help-section"><h2>Where do I buy?</h2><p>Go to EVOVOFinds on eBay to see the current listings. Select your item and complete checkout there. You don't need a separate EVOVO account, and this site doesn't collect payment information.</p>${ebayButton('Checkout on eBay')}</section><section class="help-section"><h2>Are these items for sale?</h2><p>The photographs in our style notes are inspiration only. They are not the seller's inventory. The actual item photos, prices, sizes, condition, and availability are on eBay.</p></section><section id="shipping" class="help-section"><h2>Shipping & returns</h2><p>Check the individual eBay listing for delivery estimates, shipping prices, and return terms. These can vary by item. Read the listing before you purchase.</p></section><section id="contact" class="help-section"><h2>A question about an item?</h2><p>Visit our seller page and use eBay's contact option to message EVOVOFinds. Keeping the conversation on eBay puts it alongside your listing or order.</p>${ebayButton('Visit the seller page', 'text-link')}</section><section id="privacy" class="help-section"><h2>Your saved ideas & preferences</h2><p>Your saved style ideas and tap-feedback preference are stored on this device. There is no EVOVO account, tracking analytics, payment collection, or newsletter signup. Fonts and photographs are served with this site. If you follow a link to eBay, eBay's own policies apply there.</p><button class="text-link" id="clear-data">Clear saved ideas & preferences</button></section><section class="help-section"><h2>A little tap feedback</h2><p>Supported phones can give a very short vibration when you tap a control. Use the tap-feedback switch in the footer to turn it off. iPhone Safari doesn't support web vibration, so you will see a small visual press instead. Reduced-motion settings are respected.</p></section></article>`;
+  return `<article class="help-layout"><span class="eyebrow">GOOD TO KNOW</span><h1>Shopping,<br>made clearer.</h1><section class="help-section"><h2>Where do I buy?</h2><p>Go to EVOVOFinds on eBay to see the current listings. Select your item and complete checkout there. You don't need a separate EVOVO account, and this site doesn't collect payment information.</p>${ebayButton('Checkout on eBay')}</section><section class="help-section"><h2>Are these items for sale?</h2><p>The photographs in our style notes are inspiration only. They are not the seller's inventory. The actual item photos, prices, sizes, condition, and availability are on eBay.</p></section><section id="shipping" class="help-section"><h2>Shipping & returns</h2><p>Check the individual eBay listing for delivery estimates, shipping prices, and return terms. These can vary by item. Read the listing before you purchase.</p></section><section id="contact" class="help-section"><h2>A question about an item?</h2><p>Visit our seller page and use eBay's contact option to message EVOVOFinds. Keeping the conversation on eBay puts it alongside your listing or order.</p>${ebayButton('Visit the seller page', 'text-link')}</section><section id="privacy" class="help-section"><h2>Your saved ideas & preferences</h2><p>Your saved style ideas and tap-feedback preference are stored on this device. Board links contain only the public style-reference IDs you choose to share; opening one never replaces your own saved ideas. There is no EVOVO account, tracking analytics, payment collection, or newsletter signup. Fonts and photographs are served with this site. If you follow a link to eBay, eBay's own policies apply there.</p><button class="text-link" id="clear-data">Clear saved ideas & preferences</button></section><section class="help-section"><h2>A little tap feedback</h2><p>Supported phones can give a very short vibration when you tap a control. Use the tap-feedback switch in the footer to turn it off. iPhone Safari doesn't support web vibration, so you will see a small visual press instead. Reduced-motion settings are respected.</p></section></article>`;
 }
 function notFound() {
   document.title = 'Page not found — EVOVO';
@@ -123,8 +186,11 @@ function renderPage() {
     if (a.getAttribute('href').replace(/\/$/, '') === path) a.setAttribute('aria-current', 'page');
   });
 }
-function updateSaved() {
-  try { localStorage.setItem('evovo.saved', JSON.stringify(saved)); } catch {}
+function updateSaved(write = true) {
+  let stored = true;
+  if (write) {
+    try { localStorage.setItem('evovo.saved', JSON.stringify(saved)); } catch { stored = false; }
+  }
   document.querySelectorAll('[data-save]').forEach(button => {
     const yes = saved.includes(button.dataset.save);
     const p = products.find(p => p.id === button.dataset.save);
@@ -132,12 +198,16 @@ function updateSaved() {
     if (button.classList.contains('save-button')) button.setAttribute('aria-label', `${yes ? 'Unsave' : 'Save'} ${p.name}`);
     else button.querySelector('span').textContent = yes ? 'Saved to your ideas' : 'Save this idea';
   });
+  updateSavedCounts();
   if (isSavedPage) filterProducts();
+  return stored;
 }
+
 function searchResults() {
   const q = $('#search-input').value.trim().toLowerCase();
-  const list = products.filter(p => !q || `${p.name} ${p.category} ${p.color}`.toLowerCase().includes(q)).slice(0,5);
-  $('#search-results').innerHTML = `<p class="search-results-label">${q ? 'STYLE IDEAS' : 'EXPLORE AN IDEA'}</p>` + (list.length ? list.map(p => `<a class="search-result" href="${productURL(p)}"><img src="${asset(p)}" alt=""><div><strong>${p.name}</strong><p>${p.category} · Style reference</p></div>${arrow}</a>`).join('') : '<p>No matches. Try shirts, hoodies, pants, or socks.</p>');
+  const matches = products.filter(p => !q || `${p.name} ${p.category} ${p.color}`.toLowerCase().includes(q));
+  const list = matches.slice(0,5);
+  $('#search-results').innerHTML = `<p class="search-results-label">${q ? 'STYLE IDEAS' : 'EXPLORE AN IDEA'}</p>` + (list.length ? list.map(p => `<a class="search-result" href="${productURL(p)}"><img src="${asset(p)}" alt=""><div><strong>${p.name}</strong><p>${p.category} · Style reference</p></div>${arrow}</a>`).join('') : '<p>No matches. Try shirts, hoodies, pants, or socks.</p>') + `<a class="search-view-all" href="/shop/${q ? '?q=' + encodeURIComponent($('#search-input').value.trim()) : ''}">${q ? 'See all matching ideas' : 'Explore all ' + products.length + ' ideas'} ${arrow}</a>`;
 }
 document.addEventListener('click', event => {
   const button = event.target.closest('button');
@@ -145,12 +215,29 @@ document.addEventListener('click', event => {
   if (button.dataset.close) document.getElementById(button.dataset.close).close();
   if (button.id === 'search-open') { searchResults(); $('#search-dialog').showModal(); }
   if (button.id === 'menu-open') $('#menu-dialog').showModal();
+  if (button.hasAttribute('data-copy-board')) copyBoardLink();
+  if (button.hasAttribute('data-import-board')) {
+    saved = [...new Set([...saved, ...boardIds()])];
+    const stored = updateSaved();
+    toast(stored ? 'Shared ideas added to your board' : 'Ideas saved for this visit; browser storage is unavailable');
+  }
+  if (button.hasAttribute('data-reset-filters')) {
+    query = ''; if (isSavedPage) currentCategory = 'All'; sort = 'editorial';
+    saveCatalogState(true); syncCatalogUI();
+  }
+  if (button.dataset.undoSave) {
+    if (!saved.includes(button.dataset.undoSave)) saved.push(button.dataset.undoSave);
+    updateSaved(); toast('Idea restored');
+  }
   if (button.dataset.save) {
     const id = button.dataset.save;
     const wasSaved = saved.includes(id);
     saved = wasSaved ? saved.filter(x => x !== id) : [...saved, id];
-    updateSaved();
-    toast(wasSaved ? 'Removed from saved ideas' : 'Saved for another day');
+    const stored = updateSaved();
+    toast(wasSaved ? 'Removed from saved ideas' : stored ? 'Saved for another day' : 'Saved for this visit; browser storage is unavailable', wasSaved ? id : '');
+    if (isSavedPage && wasSaved) requestAnimationFrame(() => {
+      document.querySelector('#collection-grid .save-button, #collection-grid .empty .pill')?.focus({preventScroll:true});
+    });
   }
   if (button.id === 'clear-data') {
     saved = [];
@@ -161,27 +248,42 @@ document.addEventListener('click', event => {
   }
 });
 document.addEventListener('change', event => {
-  if (event.target.id === 'product-sort') { sort = event.target.value; filterProducts(); }
+  if (event.target.id === 'product-sort') { sort = event.target.value; saveCatalogState(true); filterProducts(); }
 });
 document.addEventListener('input', event => {
   if (event.target.id === 'search-input') searchResults();
   if (event.target.id === 'collection-query') {
     query = event.target.value;
     filterProducts();
-    const url = new URL(location.href);
-    query ? url.searchParams.set('q', query) : url.searchParams.delete('q');
-    history.replaceState(null, '', url);
+    saveCatalogState();
   }
 });
 document.addEventListener('submit', event => {
-  if (event.target.id === 'collection-search') { event.preventDefault(); query = $('#collection-query').value; filterProducts(); }
+  if (event.target.id === 'collection-search') { event.preventDefault(); query = $('#collection-query').value; saveCatalogState(); filterProducts(); }
 });
 document.querySelectorAll('dialog').forEach(dialog => dialog.addEventListener('click', event => {
   if (event.target !== dialog) return;
   const rect = dialog.getBoundingClientRect();
   if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) dialog.close();
 }));
-window.addEventListener('storage', event => { if (event.key === 'evovo.saved') { saved = readSaved(); updateSaved(); } });
+window.addEventListener('storage', event => { if (event.key === 'evovo.saved' || event.key === null) { saved = readSaved(); updateSaved(false); } });
+function syncCatalogUI() {
+  if (!isCatalog) return;
+  $('#collection-query').value = query;
+  $('#product-sort').value = sort;
+  document.querySelectorAll('[data-category-link]').forEach(link => {
+    const active = link.dataset.categoryLink === currentCategory;
+    link.classList.toggle('active', active);
+    if (active) link.setAttribute('aria-current', 'page'); else link.removeAttribute('aria-current');
+    link.href = categoryURL(link.dataset.categoryLink);
+  });
+  filterProducts();
+}
+window.addEventListener('popstate', () => { readCatalogState(); syncCatalogUI(); });
 renderPage();
+updateSavedCounts();
+document.querySelectorAll('[data-dock]').forEach(link => {
+  if ((link.dataset.dock === 'saved' && isSavedPage) || (link.dataset.dock === 'ideas' && (path.startsWith('/shop') || path.startsWith('/products')))) link.setAttribute('aria-current', 'page');
+});
 // Render first so dynamically generated sections are available to the motion layer.
 document.dispatchEvent(new Event('evovo:content-ready'));

@@ -17,6 +17,10 @@ Real purchases happen at https://www.ebay.com/usr/evovofinds. The destination is
 
 `interactions.js` adds a 7ms vibration on trusted intentional taps for browsers with the Vibration API and a coarse pointer. It never vibrates on page load or scrolling. Users can turn tap feedback off using the footer switch; the preference persists on their device. Reduced-motion preferences disable haptics and motion. Unsupported browsers, including iPhone Safari, use the small visual press effect without vibration.
 
+The saved-ideas board supports search, category filtering, and name sorting. Search/sort/filter state stays in its URL. Copy board link shares the entire board as a snapshot of public style IDs; recipients see a separate board and must explicitly save ideas to merge them with their own. Unknown/duplicate IDs are ignored. Clipboard failure opens a manual-copy dialog. Unsave includes an undo action, and navigation badges reflect saved ideas across tabs.
+
+Mobile has a safe-area-aware shortcut bar for style ideas, saved ideas, and eBay. It does not add an account gate or payment flow.
+
 Press states, gentle image hover transitions, and one-time section reveals are progressive enhancements. Unsupported JavaScript or IntersectionObserver does not hide content. Fonts and images are served locally.
 
 ## Local development
