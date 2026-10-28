@@ -60,3 +60,17 @@ Vercel project: `evovo`, team: `turbo-twitch`, repository: `TurboTwitch0/TurboCl
 ## Content
 
 `catalog.js` contains editorial ideas, not a live inventory feed. Source photographs are listed in `assets-manifest.json`; the EVOVOFinds avatar was generated for the brand in this conversation. The real clothing photos and product data can be added when provided by the owner. Saved ideas and tap-feedback preferences are local to the visitor's browser and can be cleared from the help page.
+
+## The Personal Edit brand system
+
+The homepage now presents the real save/filter/share workflow with a working three-idea example board, while keeping eBay as the shopping destination. Typography, rounded panels, coffee tones, empty/invalid-link states, and a graceful module-loading/error fallback share the same visual language. `boot.js` offers a user-triggered reload and eBay route if the app module cannot start; it never simulates success.
+
+The original logo and artwork are preserved. Reusable brand exports and actual product screenshots are in `outputs/evovo-brand-kit/`. The local generator is `scripts/render-brand-kit.py`; it needs the supplied screenshots and local Chromium/Pillow/fontTools, and makes no paid API calls. No social content is published.
+
+Published download page: https://evovo.vercel.app/brand-kit/
+
+Complete ZIP: https://evovo.vercel.app/brand-kit/evovo-brand-kit.zip
+
+Style-guide PDF: https://evovo.vercel.app/brand-kit/brand-sheet.pdf
+
+Social preview art: `/brand-kit/launch-landscape.png` (1200×630) and `/brand-kit/launch-portrait.png` (1080×1350). These use actual product-screen captures and describe only delivered features. All exports remain within the existing authorized Vercel project; the private Sites audience is unchanged.

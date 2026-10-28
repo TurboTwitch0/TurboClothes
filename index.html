@@ -5,7 +5,18 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#2b1d17">
   <meta name="description" content="The home of EVOVOFinds. Explore clothing style ideas and shop current listings on eBay.">
-  <title>EVOVO — The home of EVOVOFinds.</title>
+  <title>EVOVO — Find your style. Keep your edit.</title>
+  <link rel="canonical" href="https://evovo.vercel.app/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="EVOVO / EVOVOFinds">
+  <meta property="og:title" content="EVOVO — Find your style. Keep your edit.">
+  <meta property="og:description" content="Browse style ideas, keep a personal board, and share your edit. Shop current EVOVOFinds listings on eBay.">
+  <meta property="og:image" content="https://evovo.vercel.app/assets/evovo-social-preview.png">
+  <meta property="og:image:alt" content="EVOVO: Find your style. Keep your edit. Real saved-board and mobile interface previews.">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <script src="/boot.js" defer></script>
   <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/styles.css">
   <script type="module" src="/app.js"></script>
@@ -14,11 +25,11 @@
   <a class="skip-link" href="#main">Skip to content</a>
   <div class="announcement">Find us on eBay as <a href="https://www.ebay.com/usr/evovofinds">EVOVOFinds <span data-arrow></span></a></div>
   <header class="header">
-    <a class="brand" href="/" aria-label="EVOVO home"><span class="wordmark">EVOVO</span><span class="brand-caption">THE HOME OF EVOVOFINDS</span></a>
+    <a class="brand" href="/" aria-label="EVOVO home"><span class="wordmark">EVOVO</span><span class="brand-caption">THE PERSONAL EDIT / EVOVOFINDS</span></a>
     <nav class="desktop-nav" aria-label="Main navigation"><a href="/shop/">Style ideas</a><a href="/about/">About</a><a href="/help/">How to shop</a></nav>
     <div class="header-actions"><button class="icon-button" id="search-open" aria-label="Search style ideas"></button><a class="icon-button saved-link" href="/saved/" data-saved-nav aria-label="Saved ideas"></a><a href="https://www.ebay.com/usr/evovofinds" class="pill header-shop" data-haptic>Shop on eBay <span data-arrow></span></a><button class="icon-button mobile-menu-button" id="menu-open" aria-label="Open navigation"></button></div>
   </header>
-  <main id="main"></main>
+  <main id="main" data-ready="false" aria-busy="true"><section class="app-loading"><span class="eyebrow">EVOVO / THE PERSONAL EDIT</span><span class="loading-signal" aria-hidden="true"></span><h1>Your edit is on its way.</h1><p data-boot-message role="status">Opening your style ideas…</p><div class="loading-actions"><button class="pill" data-reload-app hidden>Reload style ideas</button><a class="text-link" href="https://www.ebay.com/usr/evovofinds">Shop EVOVOFinds on eBay</a></div></section></main>
   <footer>
     <div class="footer-main"><div class="footer-brand"><a class="wordmark" href="/">EVOVO</a><p>Style ideas here.<br>Your next find on eBay.</p></div><div class="footer-links"><h2>Explore</h2><a href="/shop/">Style ideas</a><a href="/saved/">Saved ideas</a><a href="/about/">About EVOVO</a></div><div class="footer-links"><h2>Shopping</h2><a href="https://www.ebay.com/usr/evovofinds">EVOVOFinds on eBay <span data-arrow></span></a><a href="/checkout/">Checkout on eBay <span data-arrow></span></a><a href="/help/#shipping">Shipping & returns</a><a href="/help/#contact">Contact the seller</a></div><div class="footer-note"><h2>A clear way to shop.</h2><p>Listings, item details, payments, and orders are handled on eBay. The images on this site are style references.</p><button data-haptics-toggle hidden aria-pressed="true">Tap feedback on</button></div></div>
     <div class="footer-bottom"><span>© <span id="year"></span> EVOVO</span><a href="/help/#privacy">Privacy & site settings</a><span>Independent site · Not affiliated with eBay</span></div>
@@ -26,7 +37,7 @@
   <dialog id="search-dialog" class="search-dialog"><div class="dialog-top"><h2>Find some inspiration.</h2><button class="icon-button" data-close="search-dialog" aria-label="Close search">✕</button></div><form id="search-form" action="/shop/"><label class="sr-only" for="search-input">Search style ideas</label><div class="search-field"><input type="search" id="search-input" name="q" placeholder="Try hoodies, shirts, black…" autocomplete="off"><button type="submit" aria-label="Submit search"><span data-arrow></span></button></div></form><div id="search-results"></div></dialog>
   <dialog id="menu-dialog" class="menu-dialog"><div class="dialog-top"><a class="wordmark" href="/">EVOVO</a><button class="icon-button" data-close="menu-dialog" aria-label="Close navigation">✕</button></div><nav aria-label="Mobile navigation"><a href="/shop/">All style ideas</a><a href="/shop/shirts/">Shirts</a><a href="/shop/hoodies/">Hoodies</a><a href="/shop/pants/">Pants</a><a href="/shop/socks/">Socks</a><a href="/saved/">Saved ideas</a><a href="/about/">About EVOVO</a><a href="https://www.ebay.com/usr/evovofinds">Shop EVOVOFinds on eBay <span data-arrow></span></a></nav></dialog>
   <nav class="mobile-dock" aria-label="Quick navigation"><a href="/shop/" data-dock="ideas"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>Style ideas</span></a><a href="/saved/" data-dock="saved" data-saved-nav><span class="dock-icon"><span data-heart-icon></span><span class="saved-count" data-saved-count aria-hidden="true">0</span></span><span>Saved ideas</span></a><a href="https://www.ebay.com/usr/evovofinds" class="dock-ebay" data-haptic><span data-arrow></span><span>Shop eBay</span></a></nav>
-  <dialog id="share-dialog" class="share-dialog"><div class="dialog-top"><h2>Your board, ready to share.</h2><button class="icon-button" data-close="share-dialog" aria-label="Close board link">✕</button></div><p>Copy this link to share these style ideas. Anyone opening it can choose to save them to their own board.</p><label for="board-link">Board link</label><input id="board-link" type="url" readonly><p class="share-hint">Select the link above and copy it using your browser.</p></dialog>
+  <dialog id="share-dialog" class="share-dialog"><div class="dialog-top"><h2>Your edit, ready to share.</h2><button class="icon-button" data-close="share-dialog" aria-label="Close board link">✕</button></div><p>Copy this link to share these style ideas. Anyone opening it can choose to save them to their own board.</p><label for="board-link">Board link</label><input id="board-link" type="url" readonly><p class="share-hint">Select the link above and copy it using your browser.</p></dialog>
   <div id="toast" class="toast" role="status" hidden></div>
   <noscript><div class="no-script">Visit <a href="https://www.ebay.com/usr/evovofinds">EVOVOFinds on eBay</a> to shop. Turn on JavaScript to explore the style ideas on this site.</div></noscript>
 </body></html>

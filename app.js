@@ -54,12 +54,21 @@ function steps() {
     <article><span class="step-number">03</span><h3>Buy through eBay</h3><p>Choose your item and complete checkout on eBay. You can message the seller there, too.</p></article>
   </div>`;
 }
+const exampleBoardURL = '/saved/?board=core-tee,studio-layer,off-duty-pant';
+function editPreview() {
+  const edit = ['core-tee', 'studio-layer', 'off-duty-pant'].map(id => products.find(p => p.id === id));
+  return `<section class="edit-feature section" data-reveal><div class="edit-feature-copy"><span class="eyebrow">THE PERSONAL EDIT / YOUR IDEAS, TOGETHER</span><h2>Less scrolling.<br>More <em>you.</em></h2><p>Keep the styles that catch your eye. Search your saved ideas, find a combination you like, and share your whole board with a link.</p><a class="pill" href="${exampleBoardURL}">Open the example board ${arrow}</a><span class="feature-footnote">Try it first. Nothing is added to your saved ideas until you choose.</span></div><div class="edit-preview"><div class="edit-preview-head"><div><span class="eyebrow">EXAMPLE BOARD</span><h3>The everyday edit</h3></div><span class="edit-count">3 style ideas</span></div><div class="edit-preview-grid">${edit.map(p => `<article class="preview-card"><a href="${productURL(p)}"><img src="${asset(p)}" alt="${p.name}, style reference" loading="lazy" width="240" height="300"></a><button class="save-button" data-save="${p.id}" aria-label="${saved.includes(p.id) ? 'Unsave' : 'Save'} ${p.name}" aria-pressed="${saved.includes(p.id)}">${icons.heart}</button><a href="${productURL(p)}" class="preview-name">${p.name}</a><span>${p.category}</span></article>`).join('')}</div><div class="edit-preview-footer"><span>Save an idea with the heart. Make the edit yours.</span><a href="${exampleBoardURL}" aria-label="Explore the everyday example board">${arrow}</a></div></div></section>`;
+}
+function stateIllustration() {
+  return `<svg class="state-illustration" viewBox="0 0 140 105" aria-hidden="true"><rect x="20" y="18" width="65" height="76" rx="8" transform="rotate(-9 20 18)"/><rect x="54" y="12" width="65" height="76" rx="8" transform="rotate(7 54 12)"/><path d="m76 42 9 8 13-12M69 65h25"/><circle cx="25" cy="13" r="3"/></svg>`;
+}
 function home() {
   return `<section class="home-hero">
-    <div class="hero-copy"><span class="eyebrow">EVOVO / EVOVOFINDS ON EBAY</span><h1>Your next find.<br><em>A little more you.</em></h1><p>Good style starts with something that feels like you. Explore a few ideas here, then head to EVOVOFinds on eBay for our current listings.</p><div class="hero-actions">${ebayButton('Explore our eBay')}<a class="text-link" href="/shop/">Find your style ${arrow}</a></div><div class="hero-detail"><span class="small-dot"></span>Listing details and checkout are on eBay.</div></div>
+    <div class="hero-copy"><span class="eyebrow">EVOVO / THE PERSONAL EDIT</span><h1>Find your style.<br><em>Keep your edit.</em></h1><p>A little inspiration. A place to keep it. Explore style ideas, save your favorites, and share your edit. For the real listings, find EVOVOFinds on eBay.</p><div class="hero-actions"><a class="pill" href="/shop/">Build your edit ${arrow}</a>${ebayButton('Shop EVOVOFinds', 'text-link')}</div><div class="hero-detail"><span class="small-dot"></span>Listing details and checkout are on eBay.</div></div>
     <div class="hero-visual"><img class="hero-photo" src="/assets/hero.jpg" alt="Menswear style reference in a sunlit architectural setting" width="1800" height="2250" fetchpriority="high"><span class="photo-caption">A little inspiration for the everyday.</span><div class="seller-card"><img src="/assets/evovofinds-avatar.png" alt="EVOVOFinds EF monogram" width="64" height="64"><div><strong>EVOVOFinds</strong><span>Find us on eBay</span></div><a href="${EBAY_STORE_URL}" class="seller-arrow" aria-label="View EVOVOFinds on eBay">${arrow}</a></div></div>
   </section>
   <section class="how-strip" aria-label="Shopping at EVOVO"><span>One seller. One clear place to shop.</span><a href="/help/">Here's how it works ${arrow}</a><div><span>Browse on eBay</span><i></i><span>Buy on eBay</span><i></i><span>Message on eBay</span></div></section>
+  ${editPreview()}
   <section class="section" data-reveal>${sectionHeading('A LITTLE INSPIRATION', 'Make it your everyday.')}<div class="category-grid">${categories.map((c, i) => `<a class="category-card" href="/shop/${c.toLowerCase()}/"><div><img src="/assets/${['tee-plain-black.jpg','hoodie-white.jpg','pants-olive.jpg','socks-plain.jpg'][i]}" alt="${c} style inspiration" loading="lazy"></div><span>${c} ${arrow}</span></a>`).join('')}</div>${referenceNote}</section>
   <section class="section soft" data-reveal>${sectionHeading('THE STYLE NOTES', 'Simple pieces. Your own way.')}<div class="product-grid">${products.slice(0, 4).map(card).join('')}</div></section>
   <section class="shopping-story section" data-reveal><div><span class="eyebrow">A CLEARER WAY TO SHOP</span><h2>The details<br>make the difference.</h2><p>We keep this site for the inspiration, and eBay for the shopping. No second checkout, no separate account to create here.</p><a href="/help/" class="text-link">More about shopping with us ${arrow}</a></div><div>${steps()}</div></section>
@@ -127,7 +136,7 @@ function filterProducts() {
   if (sort === 'name') list.sort((a,b) => a.name.localeCompare(b.name));
   $('#results-count').textContent = `${list.length} ${list.length === 1 ? 'idea' : 'ideas'}${q ? ' for “' + query + '”' : ''}`;
   const emptyBoard = isSavedPage && !source.length;
-  $('#collection-grid').innerHTML = list.length ? list.map(card).join('') : `<div class="empty"><h2>${emptyBoard ? sharedIds === null ? 'Start your moodboard.' : 'No ideas in this link.' : 'Try another direction.'}</h2><p>${emptyBoard ? sharedIds === null ? 'Tap the heart on a style idea to keep it here.' : 'This board link has no recognized style ideas. Explore a few of your own.' : 'Your ideas are still here. Try another search or clear your filters.'}</p>${emptyBoard ? `<a href="/shop/" class="pill">Explore style ideas ${arrow}</a>` : '<button class="pill" data-reset-filters>Clear filters</button>'}</div>`;
+  $('#collection-grid').innerHTML = list.length ? list.map(card).join('') : `<div class="empty">${stateIllustration()}<span class="eyebrow">THE PERSONAL EDIT</span><h2>${emptyBoard ? sharedIds === null ? 'Start your moodboard.' : 'No ideas in this link.' : 'Try another direction.'}</h2><p>${emptyBoard ? sharedIds === null ? 'Tap the heart on a style idea to keep it here.' : 'This board link has no recognized style ideas. Explore a few of your own.' : 'Your ideas are still here. Try another search or clear your filters.'}</p>${emptyBoard ? `<a href="/shop/" class="pill">Explore style ideas ${arrow}</a>` : '<button class="pill" data-reset-filters>Clear filters</button>'}</div>`;
   updateBoardActions();
 }
 function updateSavedCounts() {
@@ -162,7 +171,7 @@ function help() {
 }
 function notFound() {
   document.title = 'Page not found — EVOVO';
-  $('#main').innerHTML = `<section class="section empty"><span class="eyebrow">404</span><h1>A different direction.</h1><p>We couldn't find that page.</p><a href="/" class="pill">Back to EVOVO ${arrow}</a></section>`;
+  $('#main').innerHTML = `<section class="section empty error-state">${stateIllustration()}<span class="eyebrow">EVOVO / 404</span><h1>A different direction.</h1><p>We couldn't find that page.</p><a href="/" class="pill">Back to EVOVO ${arrow}</a></section>`;
 }
 function renderPage() {
   if (path === '/') $('#main').innerHTML = home();
@@ -207,7 +216,7 @@ function searchResults() {
   const q = $('#search-input').value.trim().toLowerCase();
   const matches = products.filter(p => !q || `${p.name} ${p.category} ${p.color}`.toLowerCase().includes(q));
   const list = matches.slice(0,5);
-  $('#search-results').innerHTML = `<p class="search-results-label">${q ? 'STYLE IDEAS' : 'EXPLORE AN IDEA'}</p>` + (list.length ? list.map(p => `<a class="search-result" href="${productURL(p)}"><img src="${asset(p)}" alt=""><div><strong>${p.name}</strong><p>${p.category} · Style reference</p></div>${arrow}</a>`).join('') : '<p>No matches. Try shirts, hoodies, pants, or socks.</p>') + `<a class="search-view-all" href="/shop/${q ? '?q=' + encodeURIComponent($('#search-input').value.trim()) : ''}">${q ? 'See all matching ideas' : 'Explore all ' + products.length + ' ideas'} ${arrow}</a>`;
+  $('#search-results').innerHTML = `<p class="search-results-label">${q ? 'STYLE IDEAS' : 'EXPLORE AN IDEA'}</p>` + (list.length ? list.map(p => `<a class="search-result" href="${productURL(p)}"><img src="${asset(p)}" alt=""><div><strong>${p.name}</strong><p>${p.category} · Style reference</p></div>${arrow}</a>`).join('') : `<div class="search-empty">${stateIllustration()}<p>No ideas found yet. Try shirts, hoodies, pants, or socks.</p></div>`) + `<a class="search-view-all" href="/shop/${q ? '?q=' + encodeURIComponent($('#search-input').value.trim()) : ''}">${q ? 'See all matching ideas' : 'Explore all ' + products.length + ' ideas'} ${arrow}</a>`;
 }
 document.addEventListener('click', event => {
   const button = event.target.closest('button');
@@ -286,4 +295,6 @@ document.querySelectorAll('[data-dock]').forEach(link => {
   if ((link.dataset.dock === 'saved' && isSavedPage) || (link.dataset.dock === 'ideas' && (path.startsWith('/shop') || path.startsWith('/products')))) link.setAttribute('aria-current', 'page');
 });
 // Render first so dynamically generated sections are available to the motion layer.
+$('#main').dataset.ready = 'true';
+$('#main').setAttribute('aria-busy', 'false');
 document.dispatchEvent(new Event('evovo:content-ready'));

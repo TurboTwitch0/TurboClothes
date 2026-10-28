@@ -50,14 +50,18 @@ with sync_playwright() as p:
     page.on('pageerror', lambda error: errors.append(str(error)))
 
     page.goto(BASE + '/', wait_until='networkidle')
-    expect(page.locator('h1')).to_contain_text('Your next find.')
+    expect(page.locator('h1')).to_contain_text('Find your style.')
     assert page.title().startswith('EVOVO')
     assert page.locator('main .category-card').count() == 4
     assert page.locator('main .product-card').count() == 4
     assert page.locator('#cart-open, #detail-add, .size-options').count() == 0
     assert '$' not in page.locator('main').inner_text()
     assert '®' not in page.locator('body').inner_text()
-    expect(page.locator('.hero-actions .pill')).to_have_attribute('href', EBAY)
+    expect(page.locator('.hero-actions .pill')).to_have_attribute('href', '/shop/')
+    expect(page.locator('.hero-actions .text-link')).to_have_attribute('href', EBAY)
+    expect(page.locator('#main')).to_have_attribute('data-ready', 'true')
+    expect(page.locator('#main')).to_have_attribute('aria-busy', 'false')
+    expect(page.locator('.app-loading')).to_have_count(0)
     expect(page.locator('footer')).to_contain_text('images on this site are style references')
     assert_fits(page)
     reveal_and_capture(page, '/workspace/evovo-credible-desktop.png')
@@ -93,6 +97,7 @@ with sync_playwright() as p:
     assert names == sorted(names, key=str.casefold), names
     page.get_by_role('searchbox', name='Search style ideas', exact=True).fill('zzzz-no-match')
     expect(page.locator('#collection-grid .product-card')).to_have_count(0)
+    expect(page.locator('.empty .state-illustration')).to_have_count(1)
     page.get_by_role('searchbox', name='Search style ideas', exact=True).fill('')
     expect(page.locator('#collection-grid .product-card')).to_have_count(count)
 
@@ -133,6 +138,7 @@ with sync_playwright() as p:
 
     page.goto(BASE + '/404.html', wait_until='networkidle')
     expect(page.locator('h1')).to_contain_text('A different direction.')
+    expect(page.locator('.error-state .state-illustration')).to_have_count(1)
 
     # Responsive navigation and typography at small-phone through desktop widths.
     for width in [320, 390, 768, 1440]:
@@ -158,13 +164,41 @@ with sync_playwright() as p:
     page.locator('#menu-dialog').get_by_role('link', name='Hoodies', exact=True).click()
     expect(page.locator('h1')).to_contain_text('Hoodies')
     page.goto(BASE + '/', wait_until='networkidle')
-    reveal_and_capture(page, '/workspace/evovo-pass-mobile.png')
+    reveal_and_capture(page, '/workspace/evovo-launch-mobile.png')
     page.evaluate('scrollTo(0, document.documentElement.scrollHeight)')
     assert page.locator('.footer-bottom').evaluate('(el) => el.getBoundingClientRect().bottom <= document.querySelector(".mobile-dock").getBoundingClientRect().top + 1')
     page.locator('.mobile-dock .dock-ebay').click()
     expect(page).to_have_url(EBAY)
     assert not errors, errors
     context.close()
+
+    # The example edit is a real, reusable shared board, never an automatic import.
+    preview_context = browser.new_context(viewport={'width': 1440, 'height': 1000})
+    preview = preview_context.new_page()
+    preview.goto(BASE + '/', wait_until='networkidle')
+    expect(preview.locator('.edit-preview .preview-card')).to_have_count(3)
+    preview_ids = preview.locator('.edit-preview .save-button').evaluate_all('(buttons) => buttons.map(button => button.dataset.save)')
+    assert preview_ids == ['core-tee', 'studio-layer', 'off-duty-pant']
+    expect(preview.get_by_role('link', name='Open the example board', exact=True)).to_have_attribute('href', '/saved/?board=core-tee,studio-layer,off-duty-pant')
+    preview.locator('.edit-preview .save-button[data-save="studio-layer"]').click()
+    expect(preview.locator('.edit-preview .save-button[data-save="studio-layer"]')).to_have_attribute('aria-pressed', 'true')
+    expect(preview.locator('[data-saved-count]')).to_have_text(['1', '1'])
+    preview.reload(wait_until='networkidle')
+    expect(preview.locator('.edit-preview .save-button[data-save="studio-layer"]')).to_have_attribute('aria-pressed', 'true')
+    preview.get_by_role('link', name='Open the example board', exact=True).click()
+    expect(preview.locator('h1')).to_contain_text('Good ideas travel.')
+    expect(preview.locator('#collection-grid .product-card')).to_have_count(3)
+    assert preview.evaluate("JSON.parse(localStorage.getItem('evovo.saved'))") == ['studio-layer']
+    preview.locator('[data-import-board]').click()
+    assert set(preview.evaluate("JSON.parse(localStorage.getItem('evovo.saved'))")) == set(preview_ids)
+    expect(preview.locator('[data-import-board]')).to_be_disabled()
+    expect(preview.locator('[data-saved-count]')).to_have_text(['3', '3'])
+    preview.goto(BASE + '/', wait_until='networkidle')
+    expect(preview.locator('.edit-preview .save-button[aria-pressed="true"]')).to_have_count(3)
+    preview.locator('#search-open').click()
+    preview.locator('#search-input').fill('not-a-real-style')
+    expect(preview.locator('.search-empty .state-illustration')).to_have_count(1)
+    preview_context.close()
 
     # A saved board is useful across filters, reloads, tabs, and explicit sharing.
     board_context = browser.new_context(viewport={'width': 1440, 'height': 1000})
@@ -281,7 +315,7 @@ with sync_playwright() as p:
     board.goto(BASE + '/saved/?board=core-tee,daily-hoodie,off-duty-pant', wait_until='networkidle')
     board.set_viewport_size({'width': 390, 'height': 844})
     assert_fits(board)
-    board.screenshot(path='/workspace/evovo-pass-saved.png', full_page=True, animations='disabled')
+    board.screenshot(path='/workspace/evovo-launch-board.png', full_page=True, animations='disabled')
     assert not board_errors, board_errors
     board_context.close()
 
@@ -322,6 +356,12 @@ with sync_playwright() as p:
     reduced_page.locator('#search-open').tap()
     assert reduced_page.evaluate('window.__vibrations') == []
     assert not reduced_page.locator('html').evaluate('(el) => el.classList.contains("motion-ready")')
+    reduced_page.keyboard.press('Escape')
+    reduced_page.set_viewport_size({'width': 1440, 'height': 1000})
+    reduced_page.locator('.edit-preview').scroll_into_view_if_needed()
+    assert reduced_page.locator('.edit-preview').evaluate('(el) => getComputedStyle(el).transform') == 'none'
+    reduced_page.locator('.edit-preview').hover()
+    assert reduced_page.locator('.edit-preview').evaluate('(el) => getComputedStyle(el).transform') == 'none'
     reduced.close()
 
     desktop = browser.new_context(viewport={'width': 1440, 'height': 900})
@@ -341,5 +381,30 @@ with sync_playwright() as p:
     unsupported_page.locator('#search-open').tap()
     expect(unsupported_page.locator('#search-dialog')).to_be_visible()
     unsupported.close()
+    # Actual module failure leaves a useful page, and the explicit reload recovers it.
+    failed_context = browser.new_context(viewport={'width': 390, 'height': 844})
+    failed = failed_context.new_page()
+    failed.clock.install()
+    failed.route('**/app.js', lambda route: route.abort())
+    failed.goto(BASE + '/', wait_until='load')
+    failed.clock.fast_forward(7000)
+    expect(failed.locator('#main')).to_have_class(re.compile(r'\bis-error\b'))
+    expect(failed.locator('[data-boot-message]')).to_have_text('The style ideas couldn’t load. Try reloading, or browse our eBay page.')
+    expect(failed.locator('[data-reload-app]')).to_be_visible()
+    assert failed.locator('#main').get_attribute('aria-busy') is None
+    expect(failed.locator('#main a')).to_have_attribute('href', EBAY)
+    assert failed.locator('.loading-signal').evaluate('(el) => getComputedStyle(el, "::after").animationName') == 'none'
+    # A failed photograph must not mark a healthy app as broken.
+    failed.unroute('**/app.js')
+    failed.route('**/assets/hero.jpg', lambda route: route.abort())
+    failed.locator('[data-reload-app]').click()
+    expect(failed.locator('h1')).to_contain_text('Find your style.')
+    expect(failed.locator('#main')).to_have_attribute('data-ready', 'true')
+    expect(failed.locator('#main')).to_have_attribute('aria-busy', 'false')
+    failed.clock.fast_forward(7000)
+    assert not failed.locator('#main').evaluate('(el) => el.classList.contains("is-error")')
+    expect(failed.locator('.app-loading')).to_have_count(0)
+    failed_context.close()
+
     browser.close()
-    print('PASS: honest showroom and eBay handoff; mobile dock/live counts; saved-board filters, undo, sharing/import, clipboard fallback and cross-tab sync; responsive layouts and progressive haptics')
+    print('PASS: honest showroom and eBay handoff; mobile dock/live counts; saved-board filters, undo, sharing/import, clipboard fallback and cross-tab sync; responsive layouts, real example-board preview/import, loading fallback/reload, and progressive haptics')
