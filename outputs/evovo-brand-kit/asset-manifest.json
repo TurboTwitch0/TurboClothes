@@ -1,0 +1,202 @@
+{
+  "brand": "EVOVO / EVOVOFinds",
+  "revision": "editorial-showcase-v2",
+  "previous_commit": "ddc9b49f9c785a87fe47a211db0ab622b07c268d",
+  "canonical_site": "https://evovo.vercel.app/",
+  "zip_url": "https://evovo.vercel.app/brand-kit/evovo-brand-kit.zip",
+  "changed_exports": [
+    "product-home.png",
+    "launch-landscape.svg",
+    "launch-landscape.png",
+    "launch-portrait.svg",
+    "launch-portrait.png",
+    "index.html"
+  ],
+  "new_exports": [
+    "showcase-desktop.png",
+    "showcase-mobile.png",
+    "showcase-home-mobile.png",
+    "asset-manifest.json"
+  ],
+  "preserved_exports": [
+    "brand-sheet.svg",
+    "brand-sheet.png",
+    "brand-sheet.pdf",
+    "wordmark-dark.svg",
+    "wordmark-dark.png",
+    "wordmark-light.svg",
+    "wordmark-light.png",
+    "icon.svg",
+    "icon.png",
+    "evovofinds-avatar.png",
+    "launch-copy.md",
+    "README.md",
+    "product-desktop.png",
+    "product-mobile.png"
+  ],
+  "files": [
+    {
+      "path": "README.md",
+      "url": "https://evovo.vercel.app/brand-kit/README.md",
+      "bytes": 2816,
+      "sha256": "4a664353cec2bfd18c6aa22bd284099dea5ffe8c358bada783b53f59a88c2a54"
+    },
+    {
+      "path": "brand-sheet.pdf",
+      "url": "https://evovo.vercel.app/brand-kit/brand-sheet.pdf",
+      "bytes": 171092,
+      "sha256": "3c6c79e0b16f47d77e65038bbea5032ef7643a35420c32f7873ee4d91c1554f7"
+    },
+    {
+      "path": "brand-sheet.png",
+      "url": "https://evovo.vercel.app/brand-kit/brand-sheet.png",
+      "bytes": 263825,
+      "sha256": "a9f8582ffd82a52ad0ddef98a8becd073f6d4925c85a3a3adfc6ff362a56a39d"
+    },
+    {
+      "path": "brand-sheet.svg",
+      "url": "https://evovo.vercel.app/brand-kit/brand-sheet.svg",
+      "bytes": 3298280,
+      "sha256": "ae09ba0d12b71640d08c258eccd2b4c282b3f20be38f5d3d28d03c8fa03e1af8"
+    },
+    {
+      "path": "evovofinds-avatar.png",
+      "url": "https://evovo.vercel.app/brand-kit/evovofinds-avatar.png",
+      "bytes": 1604966,
+      "sha256": "8078dd18cf58d5a0da97a4e166878249baedcc6ce1b4afe70c29fce58886bc5a"
+    },
+    {
+      "path": "icon.png",
+      "url": "https://evovo.vercel.app/brand-kit/icon.png",
+      "bytes": 9651,
+      "sha256": "6a17e7d12bc6c68270d8ac7a39826c1a218cc92c2fa1f22a63e31a720315d446"
+    },
+    {
+      "path": "icon.svg",
+      "url": "https://evovo.vercel.app/brand-kit/icon.svg",
+      "bytes": 196,
+      "sha256": "7484cad95cc4c2b452af08531a09c5ba808c2e909d13b510c69c0306556e8181"
+    },
+    {
+      "path": "index.html",
+      "url": "https://evovo.vercel.app/brand-kit/index.html",
+      "bytes": 3906,
+      "sha256": "278ddf48e93bc31ee7d2d7875227b6afb88df7f4b920cbb942326566845c46e5"
+    },
+    {
+      "path": "launch-copy.md",
+      "url": "https://evovo.vercel.app/brand-kit/launch-copy.md",
+      "bytes": 1520,
+      "sha256": "46758a3df58185578332ded01510d8aea375e0a22578c2909081595064fa172d"
+    },
+    {
+      "path": "launch-landscape.png",
+      "url": "https://evovo.vercel.app/brand-kit/launch-landscape.png",
+      "bytes": 124459,
+      "sha256": "fa613d5efbc4b5f06e27913b0767c52abd9ab91c232ae00ef3b059a972dd3e34"
+    },
+    {
+      "path": "launch-landscape.svg",
+      "url": "https://evovo.vercel.app/brand-kit/launch-landscape.svg",
+      "bytes": 2579350,
+      "sha256": "9931ad6630a1af0e982c36a910f36988df62d3b81c4baf63c59966d07768211a"
+    },
+    {
+      "path": "launch-portrait.png",
+      "url": "https://evovo.vercel.app/brand-kit/launch-portrait.png",
+      "bytes": 189845,
+      "sha256": "e1b646c484df0947fd2bbc2a0e1131fc0b5ebcdb0c1f66fab67cdb63c05e9a2f"
+    },
+    {
+      "path": "launch-portrait.svg",
+      "url": "https://evovo.vercel.app/brand-kit/launch-portrait.svg",
+      "bytes": 2773844,
+      "sha256": "c7a444b51814cf7d45806472564084d231efb6289953cbe76aca84f2920329aa"
+    },
+    {
+      "path": "licenses/DM-Sans-OFL.txt",
+      "url": "https://evovo.vercel.app/brand-kit/licenses/DM-Sans-OFL.txt",
+      "bytes": 4482,
+      "sha256": "9af36190332437f5ecd09974de43c1f7c77a310a996cdd8ceb25628b458840e1"
+    },
+    {
+      "path": "product-desktop.png",
+      "url": "https://evovo.vercel.app/brand-kit/product-desktop.png",
+      "bytes": 628991,
+      "sha256": "316a580b553182f408f6465dea2c52d7e9be0edf842b9f8278e713d8fd1bc2fe"
+    },
+    {
+      "path": "product-empty.png",
+      "url": "https://evovo.vercel.app/brand-kit/product-empty.png",
+      "bytes": 101887,
+      "sha256": "91da5a1a89f339edaaaf32a828dbeabb4b0df4a6784cd7c35d2b790cf82ba58d"
+    },
+    {
+      "path": "product-error.png",
+      "url": "https://evovo.vercel.app/brand-kit/product-error.png",
+      "bytes": 57338,
+      "sha256": "c07854b41e0715683208174908fbeb263b380fb378f27de65f83b4564a2e9a14"
+    },
+    {
+      "path": "product-home.png",
+      "url": "https://evovo.vercel.app/brand-kit/product-home.png",
+      "bytes": 460276,
+      "sha256": "1752a3a8318f7666b1a1e7f2022a94e55fb1e2752f72c20f90777e002eecf394"
+    },
+    {
+      "path": "product-mobile.png",
+      "url": "https://evovo.vercel.app/brand-kit/product-mobile.png",
+      "bytes": 195841,
+      "sha256": "040dcb5afe4c4025df7f853ca64bcfadb9b6df86e002ac2b070c9ef280498ab3"
+    },
+    {
+      "path": "reference-image-sources.json",
+      "url": "https://evovo.vercel.app/brand-kit/reference-image-sources.json",
+      "bytes": 2616,
+      "sha256": "b5b16646764b9d23bfe54d71be1ffc6415239dad3b5a7340fb72c10b8b7a7d9b"
+    },
+    {
+      "path": "showcase-desktop.png",
+      "url": "https://evovo.vercel.app/brand-kit/showcase-desktop.png",
+      "bytes": 288143,
+      "sha256": "9b45318231a770d34760566a815d2d3ad6aa0e262fb8c8a8150bce0067d4b0b1"
+    },
+    {
+      "path": "showcase-home-mobile.png",
+      "url": "https://evovo.vercel.app/brand-kit/showcase-home-mobile.png",
+      "bytes": 179338,
+      "sha256": "59f7d07b617fb6805d82cfbefc01453fc6cc2e58ae5eb45262db186cdcc09d89"
+    },
+    {
+      "path": "showcase-mobile.png",
+      "url": "https://evovo.vercel.app/brand-kit/showcase-mobile.png",
+      "bytes": 145855,
+      "sha256": "5f016227c41038c3940f9f987ad6c46239d42bd1824588e3bb1d4cdd064f9f07"
+    },
+    {
+      "path": "wordmark-dark.png",
+      "url": "https://evovo.vercel.app/brand-kit/wordmark-dark.png",
+      "bytes": 20820,
+      "sha256": "a266160ae33039a4f093d443fbc35be25906d82d3e7316b93d7a3652f6b36b4d"
+    },
+    {
+      "path": "wordmark-dark.svg",
+      "url": "https://evovo.vercel.app/brand-kit/wordmark-dark.svg",
+      "bytes": 53255,
+      "sha256": "0de67da69fb601455ae7abf32feb2a83f7dd447d560857a7a1f432ae6bd7997e"
+    },
+    {
+      "path": "wordmark-light.png",
+      "url": "https://evovo.vercel.app/brand-kit/wordmark-light.png",
+      "bytes": 20413,
+      "sha256": "ebea168622c2b8543966d001b184d8e6dd0cefcea5107a72cdc504e74f15b837"
+    },
+    {
+      "path": "wordmark-light.svg",
+      "url": "https://evovo.vercel.app/brand-kit/wordmark-light.svg",
+      "bytes": 53257,
+      "sha256": "a85c8a0a3157aa2d95c84dc6cd3d41554c8d6dcc1fd96c7c361803ea672b9e79"
+    }
+  ],
+  "note": "Screenshots show the actual implemented website. Styles are inspiration; real purchasing is on eBay. No generator source files are included."
+}

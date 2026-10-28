@@ -41,8 +41,116 @@ def reveal_and_capture(page, path):
     page.screenshot(path=path, full_page=True, animations='disabled')
 
 
+def check_style_showcase(browser):
+    """The dimensional showcase is manually controlled and saves real reference IDs."""
+    context = browser.new_context(viewport={'width': 1440, 'height': 1000})
+    page = context.new_page()
+    stage_errors = []
+    page.on('pageerror', lambda error: stage_errors.append(str(error)))
+    page.goto(BASE + '/', wait_until='networkidle')
+    stage = page.locator('[data-style-stage]')
+    expect(stage).to_have_attribute('aria-roledescription', 'carousel')
+    expect(stage.locator('[data-stage-index]')).to_have_count(5)
+    ideas = ['core-tee', 'daily-hoodie', 'studio-layer', 'off-duty-pant', 'graphic-tee']
+
+    def selected(index):
+        expect(stage.locator('.stage-save')).to_have_attribute('data-save', ideas[index])
+        expect(stage.locator('[data-stage-read]')).to_have_attribute('href', '/products/' + ideas[index] + '/')
+        expect(stage.locator('.stage-card-active')).to_have_attribute('href', '/products/' + ideas[index] + '/')
+        expect(stage.locator('[data-stage-index][aria-pressed="true"]')).to_have_count(1)
+        expect(stage.locator(f'[data-stage-index="{index}"]')).to_have_attribute('aria-pressed', 'true')
+        expect(stage.locator('[data-stage-status]')).to_contain_text(f'{index + 1} of 5')
+
+    selected(0)
+    stage.locator('[data-stage-index="4"]').click()
+    selected(4)
+    expect(stage.locator('[data-stage-index="4"]')).to_be_focused()
+    stage.locator('[data-stage-move="1"]').click()
+    selected(0)
+    expect(stage.locator('[data-stage-move="1"]')).to_be_focused()
+    stage.locator('[data-stage-move="-1"]').click()
+    selected(4)
+    stage.focus()
+    page.keyboard.press('ArrowRight')
+    selected(0)
+    expect(stage).to_be_focused()
+    stage.locator('[data-stage-index="2"]').click()
+    page.keyboard.press('ArrowLeft')
+    selected(1)
+    expect(stage.locator('[data-stage-index="2"]')).to_be_focused()
+    # The image link is keyboard-focusable too; replacing its slide must retain focus.
+    stage.locator('.stage-card-active').focus()
+    page.keyboard.press('ArrowRight')
+    selected(2)
+    expect(stage.locator('.stage-card-active')).to_be_focused()
+    assert stage.locator('.stage-card-active').evaluate('(el) => getComputedStyle(el).outlineStyle') != 'none'
+    page.locator('#search-open').click()
+    page.locator('#search-input').fill('hoodie')
+    page.keyboard.press('ArrowRight')
+    selected(2)
+    page.get_by_role('button', name='Close search', exact=True).click()
+
+    # No timer advances a slide, even after a minute.
+    page.clock.install()
+    page.clock.fast_forward(60000)
+    selected(2)
+    stage.locator('.stage-save').click()
+    expect(stage.locator('.stage-save')).to_have_attribute('aria-pressed', 'true')
+    expect(page.locator('[data-saved-count]')).to_have_text(['1', '1'])
+    assert page.evaluate("JSON.parse(localStorage.getItem('evovo.saved'))") == ['studio-layer']
+    expect(page.locator('.edit-preview [data-save="studio-layer"]')).to_have_attribute('aria-pressed', 'true')
+    stage.locator('[data-stage-read]').click()
+    expect(page.locator('h1')).to_have_text('A softer neutral')
+    expect(page.locator('.detail-save')).to_have_attribute('aria-pressed', 'true')
+    page.goto(BASE + '/', wait_until='networkidle')
+    stage.locator('[data-stage-index="2"]').click()
+    expect(stage.locator('.stage-save')).to_have_attribute('aria-pressed', 'true')
+    stage.locator('.stage-save').click()
+    expect(page.locator('[data-saved-count]')).to_have_text(['0', '0'])
+    expect(page.locator('.edit-preview [data-save="studio-layer"]')).to_have_attribute('aria-pressed', 'false')
+    page.locator('[data-undo-save="studio-layer"]').click()
+    expect(stage.locator('.stage-save')).to_have_attribute('aria-pressed', 'true')
+    assert not stage_errors, stage_errors
+    context.close()
+
+    phone = browser.new_context(viewport={'width': 390, 'height': 844}, is_mobile=True, has_touch=True)
+    mobile = phone.new_page()
+    mobile.goto(BASE + '/', wait_until='networkidle')
+    for width in [320, 390, 768, 1440]:
+        mobile.set_viewport_size({'width': width, 'height': 900})
+        assert_fits(mobile)
+        for control in mobile.locator('[data-stage-move], [data-stage-index], .stage-save, [data-stage-read]').all():
+            box = control.bounding_box()
+            assert box and box['width'] >= 43.9 and box['height'] >= 43.9, (width, box)
+    mobile.set_viewport_size({'width': 390, 'height': 844})
+    mobile.locator('[data-stage-move="1"]').tap()
+    expect(mobile.locator('.stage-save')).to_have_attribute('data-save', 'daily-hoodie')
+    mobile.locator('[data-stage-index="4"]').tap()
+    expect(mobile.locator('.stage-save')).to_have_attribute('data-save', 'graphic-tee')
+    mobile.locator('[data-stage-move="1"]').tap()
+    expect(mobile.locator('.stage-save')).to_have_attribute('data-save', 'core-tee')
+    mobile.locator('[data-style-stage]').screenshot(path='/workspace/stage-mobile.png', animations='disabled')
+    phone.close()
+
+    reduced = browser.new_context(viewport={'width': 1440, 'height': 1000}, reduced_motion='reduce')
+    reduced_page = reduced.new_page()
+    reduced_page.goto(BASE + '/', wait_until='networkidle')
+    reduced_page.locator('[data-stage-move="1"]').click()
+    assert reduced_page.locator('.stage-card-active').evaluate('(el) => getComputedStyle(el).animationName') == 'none'
+    for control in reduced_page.locator('[data-stage-move], [data-stage-index]').all():
+        assert control.evaluate('(el) => getComputedStyle(el).transitionDuration') == '0s'
+    reduced_page.locator('[data-style-stage]').screenshot(path='/workspace/stage-desktop.png', animations='disabled')
+    reduced.close()
+
+
 with sync_playwright() as p:
     browser = p.chromium.launch(executable_path='/usr/bin/chromium', args=['--no-sandbox'], headless=True)
+    if not os.environ.get('EVOVO_SKIP_STAGE'):
+        check_style_showcase(browser)
+    if os.environ.get('EVOVO_STAGE_ONLY'):
+        browser.close()
+        print('PASS: manual style showcase wraparound, scoped keyboard/focus, saved persistence/links, no autoplay, touch targets and reduced motion')
+        raise SystemExit(0)
     context = browser.new_context(viewport={'width': 1440, 'height': 1000})
     intercept_ebay(context)
     page = context.new_page()
@@ -53,7 +161,9 @@ with sync_playwright() as p:
     expect(page.locator('h1')).to_contain_text('Find your style.')
     assert page.title().startswith('EVOVO')
     assert page.locator('main .category-card').count() == 4
-    assert page.locator('main .product-card').count() == 4
+    assert page.locator('main .product-card').count() == 0
+    expect(page.locator('[data-style-stage]')).to_have_count(1)
+    expect(page.locator('[data-stage-index]')).to_have_count(5)
     assert page.locator('#cart-open, #detail-add, .size-options').count() == 0
     assert '$' not in page.locator('main').inner_text()
     assert '®' not in page.locator('body').inner_text()
@@ -407,4 +517,4 @@ with sync_playwright() as p:
     failed_context.close()
 
     browser.close()
-    print('PASS: honest showroom and eBay handoff; mobile dock/live counts; saved-board filters, undo, sharing/import, clipboard fallback and cross-tab sync; responsive layouts, real example-board preview/import, loading fallback/reload, and progressive haptics')
+    print('PASS: honest showroom and eBay handoff; mobile dock/live counts; saved-board filters, undo, sharing/import, clipboard fallback and cross-tab sync; responsive layouts, manual style showcase, real example-board preview/import, loading fallback/reload, and progressive haptics')

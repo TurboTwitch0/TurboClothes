@@ -59,6 +59,37 @@ function editPreview() {
   const edit = ['core-tee', 'studio-layer', 'off-duty-pant'].map(id => products.find(p => p.id === id));
   return `<section class="edit-feature section" data-reveal><div class="edit-feature-copy"><span class="eyebrow">THE PERSONAL EDIT / YOUR IDEAS, TOGETHER</span><h2>Less scrolling.<br>More <em>you.</em></h2><p>Keep the styles that catch your eye. Search your saved ideas, find a combination you like, and share your whole board with a link.</p><a class="pill" href="${exampleBoardURL}">Open the example board ${arrow}</a><span class="feature-footnote">Try it first. Nothing is added to your saved ideas until you choose.</span></div><div class="edit-preview"><div class="edit-preview-head"><div><span class="eyebrow">EXAMPLE BOARD</span><h3>The everyday edit</h3></div><span class="edit-count">3 style ideas</span></div><div class="edit-preview-grid">${edit.map(p => `<article class="preview-card"><a href="${productURL(p)}"><img src="${asset(p)}" alt="${p.name}, style reference" loading="lazy" width="240" height="300"></a><button class="save-button" data-save="${p.id}" aria-label="${saved.includes(p.id) ? 'Unsave' : 'Save'} ${p.name}" aria-pressed="${saved.includes(p.id)}">${icons.heart}</button><a href="${productURL(p)}" class="preview-name">${p.name}</a><span>${p.category}</span></article>`).join('')}</div><div class="edit-preview-footer"><span>Save an idea with the heart. Make the edit yours.</span><a href="${exampleBoardURL}" aria-label="Explore the everyday example board">${arrow}</a></div></div></section>`;
 }
+const showcaseIdeas = ['core-tee','daily-hoodie','studio-layer','off-duty-pant','graphic-tee'].map(id => products.find(p => p.id === id));
+let showcaseIndex = 0;
+function stageCards() {
+  const current = showcaseIdeas[showcaseIndex];
+  const previous = showcaseIdeas[(showcaseIndex + showcaseIdeas.length - 1) % showcaseIdeas.length];
+  const next = showcaseIdeas[(showcaseIndex + 1) % showcaseIdeas.length];
+  return `<div class="stage-orbit" aria-hidden="true"></div><div class="stage-card stage-card-before" aria-hidden="true"><img src="${asset(previous)}" alt="" loading="eager" decoding="async"><span>${previous.category}</span></div><a href="${productURL(current)}" class="stage-card stage-card-active" aria-label="Read ${current.name}"><img src="${asset(current)}" alt="${current.name}, style reference" loading="eager" decoding="async"><span class="stage-reference-label">STYLE REFERENCE</span></a><div class="stage-card stage-card-after" aria-hidden="true"><img src="${asset(next)}" alt="" loading="eager" decoding="async"><span>${next.category}</span></div>`;
+}
+function styleShowcase() {
+  const current = showcaseIdeas[showcaseIndex];
+  return `<section id="style-showcase" class="style-showcase section" data-style-stage aria-label="Style showcase" aria-roledescription="carousel" tabindex="0"><div class="showcase-heading"><div><span class="eyebrow">THE STYLE NOTES / A DIFFERENT ANGLE</span><h2>A point<br>of <em>view.</em></h2></div><p>One idea at a time. Take a closer look, save what feels right, and make the edit your own.</p><a href="/shop/" class="text-link">All style ideas ${arrow}</a></div><div class="showcase-layout"><div class="stage-viewport" data-stage-viewport>${stageCards()}</div><div class="stage-slide-copy"><span class="eyebrow" data-stage-category>${current.category} / ${current.color}</span><h3 data-stage-title>${current.name}</h3><p data-stage-description>${current.description}</p><div class="stage-actions"><a class="pill" data-stage-read href="${productURL(current)}">Read the style note ${arrow}</a><button class="pill outline stage-save" data-save="${current.id}" aria-pressed="${saved.includes(current.id)}">${icons.heart}<span>${saved.includes(current.id) ? 'Saved to your ideas' : 'Save this idea'}</span></button></div><p class="stage-disclosure">Inspiration photography. Actual items and availability are on eBay.</p></div></div><div class="stage-navigation"><div class="stage-arrows"><button data-stage-move="-1" aria-label="Previous style idea"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5m6-6-6 6 6 6"/></svg></button><button data-stage-move="1" aria-label="Next style idea"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></button></div><div class="stage-choices" role="group" aria-label="Choose a style idea">${showcaseIdeas.map((p,i) => `<button data-stage-index="${i}" aria-label="Show ${p.name}" aria-pressed="${i === showcaseIndex}"><span>${String(i+1).padStart(2,'0')}</span></button>`).join('')}</div><p data-stage-status role="status" aria-live="polite">${current.name} · 1 of ${showcaseIdeas.length}</p><span class="stage-keyboard-hint">Arrows to explore. Yours to save.</span></div></section>`;
+}
+function setShowcase(index) {
+  const stage = $('[data-style-stage]');
+  if (!stage) return;
+  const cardHadFocus = !!$('[data-stage-viewport]')?.contains(document.activeElement);
+  showcaseIndex = (index + showcaseIdeas.length) % showcaseIdeas.length;
+  const p = showcaseIdeas[showcaseIndex];
+  $('[data-stage-viewport]').innerHTML = stageCards();
+  $('[data-stage-category]').textContent = p.category + ' / ' + p.color;
+  $('[data-stage-title]').textContent = p.name;
+  $('[data-stage-description]').textContent = p.description;
+  $('[data-stage-read]').href = productURL(p);
+  const saveButton = $('.stage-save');
+  saveButton.dataset.save = p.id;
+  saveButton.setAttribute('aria-pressed', String(saved.includes(p.id)));
+  saveButton.innerHTML = icons.heart + '<span>' + (saved.includes(p.id) ? 'Saved to your ideas' : 'Save this idea') + '</span>';
+  stage.querySelectorAll('[data-stage-index]').forEach(button => button.setAttribute('aria-pressed', String(Number(button.dataset.stageIndex) === showcaseIndex)));
+  $('[data-stage-status]').textContent = p.name + ' · ' + (showcaseIndex + 1) + ' of ' + showcaseIdeas.length;
+  if (cardHadFocus) $('.stage-card-active').focus({preventScroll:true});
+}
 function stateIllustration() {
   return `<svg class="state-illustration" viewBox="0 0 140 105" aria-hidden="true"><rect x="20" y="18" width="65" height="76" rx="8" transform="rotate(-9 20 18)"/><rect x="54" y="12" width="65" height="76" rx="8" transform="rotate(7 54 12)"/><path d="m76 42 9 8 13-12M69 65h25"/><circle cx="25" cy="13" r="3"/></svg>`;
 }
@@ -70,7 +101,7 @@ function home() {
   <section class="how-strip" aria-label="Shopping at EVOVO"><span>One seller. One clear place to shop.</span><a href="/help/">Here's how it works ${arrow}</a><div><span>Browse on eBay</span><i></i><span>Buy on eBay</span><i></i><span>Message on eBay</span></div></section>
   ${editPreview()}
   <section class="section" data-reveal>${sectionHeading('A LITTLE INSPIRATION', 'Make it your everyday.')}<div class="category-grid">${categories.map((c, i) => `<a class="category-card" href="/shop/${c.toLowerCase()}/"><div><img src="/assets/${['tee-plain-black.jpg','hoodie-white.jpg','pants-olive.jpg','socks-plain.jpg'][i]}" alt="${c} style inspiration" loading="lazy"></div><span>${c} ${arrow}</span></a>`).join('')}</div>${referenceNote}</section>
-  <section class="section soft" data-reveal>${sectionHeading('THE STYLE NOTES', 'Simple pieces. Your own way.')}<div class="product-grid">${products.slice(0, 4).map(card).join('')}</div></section>
+  ${styleShowcase()}
   <section class="shopping-story section" data-reveal><div><span class="eyebrow">A CLEARER WAY TO SHOP</span><h2>The details<br>make the difference.</h2><p>We keep this site for the inspiration, and eBay for the shopping. No second checkout, no separate account to create here.</p><a href="/help/" class="text-link">More about shopping with us ${arrow}</a></div><div>${steps()}</div></section>
   <section class="seller-section" data-reveal><div class="seller-profile"><img src="/assets/evovofinds-avatar.png" alt="EVOVOFinds logo" width="72" height="72"><div><span class="eyebrow">THE SELLER BEHIND THE SITE</span><h2>Meet EVOVOFinds.</h2></div></div><p>See our current listings, read the seller profile, or get in touch directly on eBay.</p>${ebayButton('Visit our eBay page')}</section>`;
 }
@@ -224,6 +255,8 @@ document.addEventListener('click', event => {
   if (button.dataset.close) document.getElementById(button.dataset.close).close();
   if (button.id === 'search-open') { searchResults(); $('#search-dialog').showModal(); }
   if (button.id === 'menu-open') $('#menu-dialog').showModal();
+  if (button.dataset.stageMove) setShowcase(showcaseIndex + Number(button.dataset.stageMove));
+  if (button.dataset.stageIndex !== undefined) setShowcase(Number(button.dataset.stageIndex));
   if (button.hasAttribute('data-copy-board')) copyBoardLink();
   if (button.hasAttribute('data-import-board')) {
     saved = [...new Set([...saved, ...boardIds()])];
@@ -254,6 +287,13 @@ document.addEventListener('click', event => {
     updateSaved();
     document.dispatchEvent(new Event('evovo:preferences-reset'));
     toast('Your saved ideas and preferences are cleared');
+  }
+});
+document.addEventListener('keydown', event => {
+  if (!event.target.closest?.('[data-style-stage]') || event.altKey || event.ctrlKey || event.metaKey) return;
+  if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+    event.preventDefault();
+    setShowcase(showcaseIndex + (event.key === 'ArrowRight' ? 1 : -1));
   }
 });
 document.addEventListener('change', event => {

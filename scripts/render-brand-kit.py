@@ -3,6 +3,8 @@
 
 Use --prepare to create logo/icon exports and docs before the frontend screenshots exist.
 A full run requires outputs/evovo-brand-kit/product-desktop.png and product-mobile.png.
+Use --showcase-only to refresh only launch promos from showcase-desktop.png and
+showcase-mobile.png, preserving identity, brand sheet, copy, and board screenshots.
 """
 from pathlib import Path
 import argparse, base64, hashlib, html, json, shutil
@@ -164,12 +166,12 @@ def brand_sheet():
     b.extend([text(1180,518,'Georgia',34,cls='serif'),text(1180,549,'Editorial headlines',12,MUTED),text(1180,586,'DM Sans',25),text(1180,611,'Interface & everyday language',12,MUTED),rule(64,640,1536,640),text(64,684,'03 / THE EXPERIENCE',11,MUTED,cls='small'),rect(64,710,450,308,SURFACE,12),picture(DESKTOP,74,720,430,288,mode='xMinYMin meet',radius=6,id='desktop'),text(555,762,'Build a point of view.',35,cls='serif'),text(558,811,'Browse clearly labeled style references.',18,MUTED),text(558,851,'Filter ideas into your own edit.',18,MUTED),text(558,891,'Save favorites and share a board.',18,MUTED),text(558,965,'Purchases on EVOVOFinds eBay listings.',16,MUTED),rect(1221,705,134,325,INK,20),picture(MOBILE,1227,713,122,309,mode='xMinYMin meet',radius=14,id='mobile'),text(1380,750,'Browse.',17),text(1380,779,'Save.',17),text(1380,808,'Share.',17),text(64,1060,'Style inspiration on EVOVO. Purchases on eBay.',16,MUTED),text(1184,1060,'8PX RHYTHM / ORIGINAL ART',10,MUTED,cls='small')])
     return svg(1600,1100,b,PAPER,'EVOVO brand sheet — The Personal Edit')
 
-def landscape():
-    b=[wordmark(52,33,185),text(54,141,'THE PERSONAL EDIT',12,MUTED,cls='small'),text(52,230,'Find your style.',57,cls='serif'),text(52,294,'Keep your edit.',57,cls='serif'),text(55,349,'Browse references. Save favorites.',17,MUTED),text(55,378,'Share a board that feels like you.',17,MUTED),rect(54,416,222,52,INK,5),text(77,449,'EXPLORE THE EDIT',12,PAPER,weight=600,spacing=1.1),text(54,564,'Style inspiration on EVOVO.',14,MUTED),text(54,589,'Purchases on eBay.',14,MUTED),rect(578,30,590,570,SURFACE,24),rect(602,70,542,371,PAPER,11),picture(DESKTOP,610,78,526,355,mode='xMinYMin slice',radius=6,id='desktop'),picture(AVATAR,618,466,101,101,radius=12,id='avatar'),text(744,497,'EVOVOFinds',22),text(744,528,'Your next find, on eBay.',16,MUTED),text(744,558,'THE HOME OF EVOVOFINDS',10,MUTED,cls='small')]
+def landscape(desktop=DESKTOP):
+    b=[wordmark(52,33,185),text(54,141,'THE PERSONAL EDIT',12,MUTED,cls='small'),text(52,230,'Find your style.',57,cls='serif'),text(52,294,'Keep your edit.',57,cls='serif'),text(55,349,'Browse references. Save favorites.',17,MUTED),text(55,378,'Share a board that feels like you.',17,MUTED),rect(54,416,222,52,INK,5),text(77,449,'EXPLORE THE EDIT',12,PAPER,weight=600,spacing=1.1),text(54,564,'Style inspiration on EVOVO.',14,MUTED),text(54,589,'Purchases on eBay.',14,MUTED),rect(578,30,590,570,SURFACE,24),rect(602,70,542,371,PAPER,11),picture(desktop,610,78,526,355,mode='xMinYMin slice',radius=6,id='desktop'),picture(AVATAR,618,466,101,101,radius=12,id='avatar'),text(744,497,'EVOVOFinds',22),text(744,528,'Your next find, on eBay.',16,MUTED),text(744,558,'THE HOME OF EVOVOFINDS',10,MUTED,cls='small')]
     return svg(1200,630,b,PAPER,'EVOVO launch — Find your style. Keep your edit.')
 
-def portrait():
-    b=[rect(0,0,1080,570,INK),wordmark(66,52,253,PAPER),text(67,205,'THE PERSONAL EDIT',15,ACCENT,cls='small'),text(64,306,'Find your style.',83,PAPER,cls='serif'),text(64,401,'Keep your edit.',83,PAPER,cls='serif'),text(68,473,'Browse references. Save favorites. Share your board.',21,PAPER),rect(64,612,953,525,SURFACE,18),rect(95,644,584,403,PAPER,11),picture(DESKTOP,105,654,564,383,mode='xMinYMin slice',radius=7,id='desktop'),rect(746,641,186,454,INK,24),picture(MOBILE,753,650,172,436,mode='xMinYMin meet',radius=18,id='mobile'),text(99,1092,'YOUR STYLE. YOUR POINT OF VIEW.',12,MUTED,cls='small'),picture(AVATAR,67,1195,93,93,radius=12,id='avatar'),text(186,1226,'Style inspiration on EVOVO.',23),text(186,1262,'Purchases on eBay.',23,MUTED),text(813,1297,'EVOVOFINDS',11,MUTED,cls='small')]
+def portrait(desktop=DESKTOP, mobile=MOBILE):
+    b=[rect(0,0,1080,570,INK),wordmark(66,52,253,PAPER),text(67,205,'THE PERSONAL EDIT',15,ACCENT,cls='small'),text(64,306,'Find your style.',83,PAPER,cls='serif'),text(64,401,'Keep your edit.',83,PAPER,cls='serif'),text(68,473,'Browse references. Save favorites. Share your board.',21,PAPER),rect(64,612,953,525,SURFACE,18),rect(95,644,584,403,PAPER,11),picture(desktop,105,654,564,383,mode='xMinYMin slice',radius=7,id='desktop'),rect(746,641,186,454,INK,24),picture(mobile,753,650,172,436,mode='xMinYMin meet',radius=18,id='mobile'),text(99,1092,'YOUR STYLE. YOUR POINT OF VIEW.',12,MUTED,cls='small'),picture(AVATAR,67,1195,93,93,radius=12,id='avatar'),text(186,1226,'Style inspiration on EVOVO.',23),text(186,1262,'Purchases on eBay.',23,MUTED),text(813,1297,'EVOVOFINDS',11,MUTED,cls='small')]
     return svg(1080,1350,b,PAPER,'EVOVO portrait launch — The Personal Edit')
 
 def render_pngs(names):
@@ -191,7 +193,25 @@ def render_pngs(names):
         browser.close()
 
 if __name__=='__main__':
-    parser=argparse.ArgumentParser();parser.add_argument('--prepare',action='store_true');args=parser.parse_args()
+    parser=argparse.ArgumentParser()
+    modes=parser.add_mutually_exclusive_group()
+    modes.add_argument('--prepare',action='store_true')
+    modes.add_argument('--showcase-only',action='store_true')
+    args=parser.parse_args()
+    if args.showcase_only:
+        showcase_desktop=OUT/'showcase-desktop.png'
+        showcase_mobile=OUT/'showcase-mobile.png'
+        if not showcase_desktop.exists() or not showcase_mobile.exists():
+            raise SystemExit('Waiting for actual showcase-desktop.png and showcase-mobile.png; existing promos and identity are unchanged.')
+        protected=['brand-sheet.svg','brand-sheet.png','brand-sheet.pdf','wordmark-dark.svg','wordmark-dark.png','wordmark-light.svg','wordmark-light.png','icon.svg','icon.png','evovofinds-avatar.png','launch-copy.md','README.md','product-desktop.png','product-mobile.png']
+        before={n:hashlib.sha256((OUT/n).read_bytes()).hexdigest() for n in protected if (OUT/n).exists()}
+        write_svg('launch-landscape.svg',landscape(desktop=showcase_desktop))
+        write_svg('launch-portrait.svg',portrait(desktop=showcase_desktop,mobile=showcase_mobile))
+        render_pngs(['launch-landscape.svg','launch-portrait.svg'])
+        for n,digest in before.items():
+            assert hashlib.sha256((OUT/n).read_bytes()).hexdigest()==digest, f'Protected asset changed: {n}'
+        print(json.dumps({'output':str(OUT),'refreshed':['launch-landscape.svg','launch-landscape.png','launch-portrait.svg','launch-portrait.png'],'preserved_assets':len(before),'screenshots':'actual showcase captures embedded'},indent=2))
+        raise SystemExit(0)
     prepare()
     names=['wordmark-dark.svg','wordmark-light.svg','icon.svg']
     if not args.prepare:

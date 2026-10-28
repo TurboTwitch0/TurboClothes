@@ -74,3 +74,9 @@ Complete ZIP: https://evovo.vercel.app/brand-kit/evovo-brand-kit.zip
 Style-guide PDF: https://evovo.vercel.app/brand-kit/brand-sheet.pdf
 
 Social preview art: `/brand-kit/launch-landscape.png` (1200×630) and `/brand-kit/launch-portrait.png` (1080×1350). These use actual product-screen captures and describe only delivered features. All exports remain within the existing authorized Vercel project; the private Sites audience is unchanged.
+
+## Editorial showcase delta
+
+The current homepage adds an airy arched hero and a manual five-idea spatial showcase using existing style-reference photos. Previous/next, direct choices, scoped Left/Right keys, read-note links, and persistent saves are real controls. No autoplay or hover-only actions. Reduced motion removes selection animations while preserving the static composition. The saved-board workflows and eBay handoff are preserved.
+
+Current exports: `/brand-kit/showcase-desktop.png`, `/brand-kit/showcase-mobile.png`, `/brand-kit/showcase-home-mobile.png`. Screenshot-based launch artwork and the ZIP are refreshed; reusable logos, style guide/PDF, launch copy, and board previews remain unchanged. `/brand-kit/asset-manifest.json` lists changed/new/preserved exports and SHA-256 hashes. `scripts/render-brand-kit.py --showcase-only` refreshes only the two promo compositions. Generator source is not included in the public ZIP.
