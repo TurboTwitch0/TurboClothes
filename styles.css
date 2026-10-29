@@ -579,3 +579,35 @@ body:has(dialog[open]) { overflow: hidden; }
 }
 /* Flatten each photo's own paint layer; perspective belongs to the whole card. */
 .stage-card { transform-style: flat; }
+
+/* Practical browsing controls and a safer saved-board workspace. */
+.collection-return { display: inline-flex; align-items: center; min-height: 44px; font-size: 12px; }
+.breadcrumbs:has(.collection-return) { align-items: center; padding-top: 16px; padding-bottom: 16px; }
+.product-card { scroll-margin: 100px 0; }
+.results-line { min-width: 0; }
+#results-count { overflow-wrap: anywhere; }
+.inline-search { flex-shrink: 0; }
+.inline-search input { min-height: 44px; }
+.inline-search button { min-width: 44px; min-height: 44px; }
+[data-clear-search] { font-size: 24px; color: var(--muted); }
+.category-tabs>a, .sort select { min-height: 44px; }
+.save-button { min-width: 44px; min-height: 44px; }
+.toast { width: max-content; }
+.toast button { flex-shrink: 0; min-width: 44px; min-height: 44px; font-size: 12px; }
+.toast .toast-dismiss { font-size: 22px; border: 0; color: var(--paper); }
+.clear-dialog { width: 570px; }
+.clear-dialog>p { font-size: 13px; color: var(--muted); margin: 0 0 20px; }
+.clear-dialog .text-link { display: inline; font-size: inherit; padding: 0; border: 0; text-decoration: underline; text-underline-offset: 3px; }
+.clear-dialog .dialog-top { gap: 12px; }
+.clear-dialog .icon-button { min-width: 44px; min-height: 44px; flex-shrink: 0; }
+.clear-actions { display: flex; flex-wrap: wrap; gap: 12px; margin: 24px 0; }
+.clear-actions .pill { min-height: 44px; }
+.clear-dialog .clear-footnote { font-size: 11px; margin-bottom: 0; }
+@media (max-width:760px) {
+  .results-line { flex-direction: column; align-items: stretch; gap: 12px; }
+  .inline-search input { width: 0; flex: 1; font-size: 16px; }
+  .sort select { font-size: 16px; }
+  .category-tabs>a { font-size: 12px; }
+  .clear-actions { flex-direction: column; align-items: stretch; }
+  .clear-dialog .dialog-top h2 { font-size: 25px; }
+}

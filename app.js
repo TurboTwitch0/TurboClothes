@@ -5,11 +5,6 @@ const $ = selector => document.querySelector(selector);
 const escapeHTML = value => String(value).replace(/[&<>"']/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character]));
 const arrow = '<svg class="arrow-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19 19 5M5 5h14v14"/></svg>';
 
-function matchesProduct(product, query) {
-  const text = `${product.name} ${product.category} ${product.color} ${product.fit || ''}`.toLowerCase();
-  return query.trim().toLowerCase().split(/\s+/).every(term => text.includes(term));
-}
-
 const icons = {
   search: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.7"/><path d="m16 16 5 5"/></svg>',
   heart: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.7c-2.3-2.2-6-1.5-8.8 1.5C9.2 3.2 5.5 2.5 3.2 4.7c-2.4 2.4-1.6 6.5.8 9L12 21l8-7.3c2.4-2.5 3.2-6.6.8-9z"/></svg>',
@@ -30,23 +25,59 @@ function readSaved() {
 }
 let saved = readSaved();
 let toastTimer;
-function toast(message, undoId = '') {
-  $('#toast').innerHTML = `<span>${escapeHTML(message)}</span>${undoId ? `<button data-undo-save="${undoId}">Undo</button>` : ''}`;
-  $('#toast').hidden = false;
+let clearSnapshot = null;
+function dismissToastLater() {
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => $('#toast').hidden = true, 2400);
+  const notification = $('#toast');
+  if (notification.querySelector('[data-undo-save], [data-undo-clear]') || notification.contains(document.activeElement) || notification.matches(':hover')) return;
+  toastTimer = setTimeout(() => notification.hidden = true, 3200);
 }
+function toast(message, undoId = '', undoClear = false) {
+  $('#toast').innerHTML = `<span>${escapeHTML(message)}</span>${undoId ? `<button data-undo-save="${undoId}">Undo</button>` : undoClear ? '<button data-undo-clear>Undo clear</button>' : ''}${undoId || undoClear ? '<button class="toast-dismiss" data-dismiss-toast aria-label="Dismiss notification">×</button>' : ''}`;
+  $('#toast').hidden = false;
+  dismissToastLater();
+}
+$('#toast').addEventListener('pointerenter', () => clearTimeout(toastTimer));
+$('#toast').addEventListener('pointerleave', dismissToastLater);
+$('#toast').addEventListener('focusin', () => clearTimeout(toastTimer));
+$('#toast').addEventListener('focusout', () => queueMicrotask(dismissToastLater));
 const asset = p => '/assets/' + p.image;
 const productURL = p => '/products/' + p.id + '/';
+const searchAliases = {
+  Shirts: 'shirt shirts tee tees t shirt tshirt tshirts',
+  Hoodies: 'hoodie hoodies sweatshirt sweatshirts',
+  Pants: 'pant pants trouser trousers',
+  Socks: 'sock socks'
+};
+function matchesProduct(p, value) {
+  const words = text => text.toLowerCase().normalize('NFKD').match(/[\p{L}\p{N}]+/gu) || [];
+  const terms = words(value);
+  const searchable = words(`${p.name} ${p.category} ${p.color} ${p.fit || ''} ${searchAliases[p.category]} ${p.color === 'Grey' ? 'gray' : ''}`);
+  return terms.every(term => searchable.some(word => word.includes(term)));
+}
+function collectionProductURL(p) {
+  const from = isCatalog ? location.pathname + location.search : collectionReturn()?.href;
+  return productURL(p) + (from ? '?from=' + encodeURIComponent(from) : '');
+}
+function collectionReturn() {
+  const from = new URLSearchParams(location.search).get('from');
+  if (!from || !from.startsWith('/') || from.startsWith('//')) return null;
+  try {
+    const url = new URL(from, location.origin);
+    if (url.origin !== location.origin || !/^\/(shop(?:\/(shirts|hoodies|pants|socks))?|saved)\/?$/.test(url.pathname)) return null;
+    const label = url.pathname.startsWith('/saved') ? url.searchParams.has('board') ? 'Back to this shared board' : 'Back to your saved ideas' : 'Back to your style ideas';
+    return {href: url.pathname + url.search, label};
+  } catch { return null; }
+}
 const ebayButton = (label = 'Shop EVOVOFinds on eBay', className = 'pill') => `<a class="${className}" href="${EBAY_STORE_URL}" data-haptic>${label} ${arrow}</a>`;
 const referenceNote = '<p class="reference-note">Style inspiration using reference photography. For items, prices, and availability, visit our eBay listings.</p>';
 
 function card(p) {
   const isSaved = saved.includes(p.id);
-  return `<article class="product-card">
-    <a class="product-image" href="${productURL(p)}"><img src="${asset(p)}" alt="${p.name}, style reference" loading="lazy" width="800" height="960"><span class="product-tag">Style idea</span></a>
+  return `<article class="product-card" id="idea-${p.id}">
+    <a class="product-image" href="${escapeHTML(collectionProductURL(p))}"><img src="${asset(p)}" alt="${p.name}, style reference" loading="lazy" width="800" height="960"><span class="product-tag">Style idea</span></a>
     <button class="save-button" data-save="${p.id}" aria-label="${isSaved ? 'Unsave' : 'Save'} ${p.name}" aria-pressed="${isSaved}">${icons.heart}</button>
-    <div class="product-info"><a href="${productURL(p)}">${p.name}</a><span>${arrow}</span></div>
+    <div class="product-info"><a href="${escapeHTML(collectionProductURL(p))}">${p.name}</a><span>${arrow}</span></div>
     <p class="product-meta">${p.category} · ${p.color}</p>
   </article>`;
 }
@@ -153,7 +184,7 @@ function catalogPage(category = 'All', savedPage = false) {
     <section class="catalog-head"><span class="eyebrow">${savedPage ? shared ? 'A LITTLE INSPIRATION, SHARED' : 'YOUR OWN MOODBOARD' : 'THE STYLE NOTES'}</span><h1>${savedPage ? shared ? 'Good ideas travel.' : 'Keep the good ideas.' : category === 'All' ? 'A little inspiration.' : category + ', your way.'}</h1><p>${savedPage ? shared ? 'Someone shared these style ideas with you. Explore them here, or save them alongside your own favorites.' : 'Your personal edit, kept on this device. Find a look, save it, and share your board when inspiration strikes.' : 'A few ways to think about your everyday wardrobe. These are style references, not items listed for sale.'}</p>
     ${savedPage ? `<div class="board-actions"><button class="pill" data-copy-board>Copy board link ${arrow}</button>${shared ? '<button class="pill outline" data-import-board>Save these ideas</button><a class="text-link" href="/saved/">My saved ideas</a>' : '<span class="board-local">No account needed · Saved on this device</span>'}</div>` : ebayButton('Shop current listings', 'text-link')}</section>
     <section class="catalog-body"><div class="catalog-controls"><nav class="category-tabs" aria-label="Style categories">${['All', ...categories].map(c => `<a class="${c === currentCategory ? 'active' : ''}" ${c === currentCategory ? 'aria-current="page"' : ''} data-category-link="${c}" href="${escapeHTML(categoryURL(c))}">${c === 'All' ? 'All ideas' : c}</a>`).join('')}</nav><label class="sort"><span class="sr-only">Sort style ideas</span><select id="product-sort"><option value="editorial" ${sort === 'editorial' ? 'selected' : ''}>Our edit</option><option value="name" ${sort === 'name' ? 'selected' : ''}>Name: A to Z</option></select></label></div>
-    <div class="results-line"><span id="results-count" role="status" aria-live="polite"></span><form class="inline-search" id="collection-search"><label class="sr-only" for="collection-query">Search style ideas</label><input id="collection-query" type="search" placeholder="${savedPage ? 'Search your board…' : 'Find an idea…'}" value="${escapeHTML(query)}"><button aria-label="Search ideas">${icons.search}</button></form></div><div class="product-grid" id="collection-grid"></div>${referenceNote}</section>`;
+    <div class="results-line"><span id="results-count" role="status" aria-live="polite"></span><form class="inline-search" id="collection-search"><label class="sr-only" for="collection-query">Search style ideas</label><input id="collection-query" type="search" placeholder="${savedPage ? 'Search your board…' : 'Try black pants…'}" value="${escapeHTML(query)}"><button type="button" data-clear-search aria-label="Clear search" ${query ? '' : 'hidden'}>×</button><button aria-label="Search ideas">${icons.search}</button></form></div><div class="product-grid" id="collection-grid"></div>${referenceNote}</section>`;
 }
 function updateBoardActions() {
   const copy = $('[data-copy-board]');
@@ -172,6 +203,7 @@ function filterProducts() {
   if (q) list = list.filter(p => matchesProduct(p, q));
   if (sort === 'name') list.sort((a,b) => a.name.localeCompare(b.name));
   $('#results-count').textContent = `${list.length} ${list.length === 1 ? 'idea' : 'ideas'}${q ? ' for “' + query + '”' : ''}`;
+  $('[data-clear-search]').hidden = !query;
   const emptyBoard = isSavedPage && !source.length;
   $('#collection-grid').innerHTML = list.length ? list.map(card).join('') : `<div class="empty">${stateIllustration()}<span class="eyebrow">THE PERSONAL EDIT</span><h2>${emptyBoard ? sharedIds === null ? 'Start your moodboard.' : 'No ideas in this link.' : 'Try another direction.'}</h2><p>${emptyBoard ? sharedIds === null ? 'Tap the heart on a style idea to keep it here.' : 'This board link has no recognized style ideas. Explore a few of your own.' : 'Your ideas are still here. Try another search or clear your filters.'}</p>${emptyBoard ? `<a href="/shop/" class="pill">Explore style ideas ${arrow}</a>` : '<button class="pill" data-reset-filters>Clear filters</button>'}</div>`;
   updateBoardActions();
@@ -196,7 +228,8 @@ async function copyBoardLink() {
 }
 
 function detail(p) {
-  return `<nav class="breadcrumbs" aria-label="Breadcrumb"><a href="/">Home</a><span>/</span><a href="/shop/${p.category.toLowerCase()}/">${p.category}</a><span>/</span><span>Style note</span></nav>
+  const back = collectionReturn();
+  return `<nav class="breadcrumbs" aria-label="Breadcrumb">${back ? `<a class="collection-return" data-collection-return href="${escapeHTML(back.href + '#idea-' + p.id)}">← ${back.label}</a>` : `<a href="/">Home</a><span>/</span><a href="/shop/${p.category.toLowerCase()}/">${p.category}</a>`}<span>/</span><span>Style note</span></nav>
     <article class="product-detail"><div class="detail-image"><img src="${asset(p)}" alt="${p.name}, reference photography"><span class="product-tag">Style reference</span></div><div class="detail-content"><span class="eyebrow">THE STYLE NOTES / ${p.category}</span><h1>${p.name}</h1><p class="detail-copy">${p.description}</p><div class="reference-box"><strong>A little inspiration, not a listing.</strong><p>This photograph is a style reference. It doesn't represent an item available from EVOVOFinds. Check eBay for the actual item photos, prices, sizes, and availability.</p></div>${ebayButton('Browse EVOVOFinds on eBay')}<button class="pill outline detail-save" data-save="${p.id}" aria-pressed="${saved.includes(p.id)}">${icons.heart}<span>${saved.includes(p.id) ? 'Saved to your ideas' : 'Save this idea'}</span></button><details><summary>Shopping, delivery & returns ${arrow}</summary><p>Read the details on the individual eBay listing before buying. Shipping costs, condition, and return terms are shown there. If you have questions, message EVOVOFinds on eBay.</p></details></div></article>
     <section class="section soft">${sectionHeading('ANOTHER DIRECTION', 'More to work with.')}<div class="product-grid">${products.filter(x => x.id !== p.id).slice(0,4).map(card).join('')}</div></section>`;
 }
@@ -233,6 +266,8 @@ function renderPage() {
   });
 }
 function updateSaved(write = true) {
+  const focusedSave = document.activeElement?.closest('#collection-grid [data-save]');
+  const focusedIndex = focusedSave ? [...document.querySelectorAll('#collection-grid [data-save]')].indexOf(focusedSave) : -1;
   let stored = true;
   if (write) {
     try { localStorage.setItem('evovo.saved', JSON.stringify(saved)); } catch { stored = false; }
@@ -245,7 +280,14 @@ function updateSaved(write = true) {
     else button.querySelector('span').textContent = yes ? 'Saved to your ideas' : 'Save this idea';
   });
   updateSavedCounts();
-  if (isSavedPage) filterProducts();
+  if (isSavedPage) {
+    filterProducts();
+    if (focusedSave) {
+      const controls = [...document.querySelectorAll('#collection-grid [data-save]')];
+      const next = controls.find(button => button.dataset.save === focusedSave.dataset.save) || controls[Math.min(focusedIndex, controls.length - 1)] || $('#collection-grid .empty .pill');
+      next?.focus({preventScroll:true});
+    }
+  }
   return stored;
 }
 
@@ -263,6 +305,11 @@ document.addEventListener('click', event => {
   if (button.id === 'menu-open') $('#menu-dialog').showModal();
   if (button.dataset.stageMove) setShowcase(showcaseIndex + Number(button.dataset.stageMove));
   if (button.dataset.stageIndex !== undefined) setShowcase(Number(button.dataset.stageIndex));
+  if (button.hasAttribute('data-dismiss-toast')) {
+    $('#toast').hidden = true;
+    if (isSavedPage) document.querySelector('#collection-grid .save-button, #collection-grid .empty .pill')?.focus({preventScroll:true});
+    else document.querySelector('#clear-data, .detail-save, .stage-save')?.focus({preventScroll:true});
+  }
   if (button.hasAttribute('data-copy-board')) copyBoardLink();
   if (button.hasAttribute('data-import-board')) {
     saved = [...new Set([...saved, ...boardIds()])];
@@ -272,10 +319,17 @@ document.addEventListener('click', event => {
   if (button.hasAttribute('data-reset-filters')) {
     query = ''; if (isSavedPage) currentCategory = 'All'; sort = 'editorial';
     saveCatalogState(true); syncCatalogUI();
+    $('#collection-query').focus({preventScroll:true});
+  }
+  if (button.hasAttribute('data-clear-search')) {
+    query = ''; saveCatalogState(true); syncCatalogUI();
+    $('#collection-query').focus({preventScroll:true});
   }
   if (button.dataset.undoSave) {
     if (!saved.includes(button.dataset.undoSave)) saved.push(button.dataset.undoSave);
-    updateSaved(); toast('Idea restored');
+    const stored = updateSaved();
+    toast(stored ? 'Idea restored' : 'Idea restored for this visit; browser storage is unavailable');
+    document.querySelector(`[data-save="${button.dataset.undoSave}"]`)?.focus({preventScroll:true});
   }
   if (button.dataset.save) {
     const id = button.dataset.save;
@@ -283,16 +337,34 @@ document.addEventListener('click', event => {
     saved = wasSaved ? saved.filter(x => x !== id) : [...saved, id];
     const stored = updateSaved();
     toast(wasSaved ? 'Removed from saved ideas' : stored ? 'Saved for another day' : 'Saved for this visit; browser storage is unavailable', wasSaved ? id : '');
-    if (isSavedPage && wasSaved) requestAnimationFrame(() => {
-      document.querySelector('#collection-grid .save-button, #collection-grid .empty .pill')?.focus({preventScroll:true});
-    });
   }
   if (button.id === 'clear-data') {
+    $('#clear-summary').textContent = saved.length ? `You have ${saved.length} saved ${saved.length === 1 ? 'idea' : 'ideas'} on this device. Clearing also resets your tap-feedback preference.` : 'This resets your tap-feedback preference. There are no saved ideas on this device.';
+    $('#clear-dialog').showModal();
+  }
+  if (button.hasAttribute('data-confirm-clear')) {
+    clearSnapshot = {saved: [...saved], preferences: {}};
+    try { for (const key of ['evovo.bag', 'evovo.haptics']) clearSnapshot.preferences[key] = localStorage.getItem(key); } catch {}
     saved = [];
-    try { ['evovo.saved', 'evovo.bag', 'evovo.haptics'].forEach(key => localStorage.removeItem(key)); } catch {}
-    updateSaved();
+    let cleared = true;
+    try { ['evovo.saved', 'evovo.bag', 'evovo.haptics'].forEach(key => localStorage.removeItem(key)); } catch { cleared = false; }
+    const stored = updateSaved();
     document.dispatchEvent(new Event('evovo:preferences-reset'));
-    toast('Your saved ideas and preferences are cleared');
+    $('#clear-dialog').close();
+    toast(cleared && stored ? 'Saved ideas and preferences cleared on this device' : 'Cleared for this visit; browser storage is unavailable', '', true);
+  }
+  if (button.hasAttribute('data-undo-clear') && clearSnapshot) {
+    saved = [...new Set([...readSaved(), ...clearSnapshot.saved])];
+    let stored = updateSaved();
+    try {
+      for (const [key, value] of Object.entries(clearSnapshot.preferences)) {
+        if (value !== null) localStorage.setItem(key, value);
+      }
+    } catch { stored = false; }
+    document.dispatchEvent(new CustomEvent('evovo:preferences-reset', {detail: {feedbackEnabled: clearSnapshot.preferences['evovo.haptics'] !== 'off'}}));
+    clearSnapshot = null;
+    toast(stored ? 'Your saved ideas and preferences are restored' : 'Ideas restored for this visit; browser storage is unavailable');
+    $('#clear-data')?.focus({preventScroll:true});
   }
 });
 document.addEventListener('keydown', event => {
@@ -309,8 +381,8 @@ document.addEventListener('input', event => {
   if (event.target.id === 'search-input') searchResults();
   if (event.target.id === 'collection-query') {
     query = event.target.value;
-    filterProducts();
     saveCatalogState();
+    filterProducts();
   }
 });
 document.addEventListener('submit', event => {
@@ -337,6 +409,13 @@ function syncCatalogUI() {
 window.addEventListener('popstate', () => { readCatalogState(); syncCatalogUI(); });
 renderPage();
 updateSavedCounts();
+if (isCatalog && /^#idea-[a-z-]+$/.test(location.hash)) {
+  const idea = document.getElementById(location.hash.slice(1));
+  if (idea) requestAnimationFrame(() => {
+    idea.querySelector('.product-image').focus({preventScroll:true});
+    idea.scrollIntoView({block:'center', behavior:'instant'});
+  });
+}
 document.querySelectorAll('[data-dock]').forEach(link => {
   if ((link.dataset.dock === 'saved' && isSavedPage) || (link.dataset.dock === 'ideas' && (path.startsWith('/shop') || path.startsWith('/products')))) link.setAttribute('aria-current', 'page');
 });

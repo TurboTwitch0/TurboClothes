@@ -164,8 +164,8 @@ queueMicrotask(() => {
 
 reducedMotion.addEventListener('change', updateMotionPreference);
 coarsePointer.addEventListener('change', updateToggles);
-document.addEventListener('evovo:preferences-reset', () => {
-  feedbackEnabled = true;
+document.addEventListener('evovo:preferences-reset', event => {
+  feedbackEnabled = event.detail?.feedbackEnabled ?? true;
   updateToggles();
 });
 window.addEventListener('storage', event => {

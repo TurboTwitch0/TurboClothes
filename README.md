@@ -19,6 +19,10 @@ Real purchases happen at https://www.ebay.com/usr/evovofinds. The destination is
 
 The saved-ideas board supports search, category filtering, and name sorting. Search/sort/filter state stays in its URL. Copy board link shares the entire board as a snapshot of public style IDs; recipients see a separate board and must explicitly save ideas to merge them with their own. Unknown/duplicate IDs are ignored. Clipboard failure opens a manual-copy dialog. Unsave includes an undo action, and navigation badges reflect saved ideas across tabs.
 
+Search matches individual words in any order, including familiar category terms and grey/gray spelling, so “black pants” and “white shirt” work in both search surfaces. Collection cards carry a safe local return link into their style note; returning restores the original board, category, query and sort, and focuses the idea you opened. Mobile search, save, category and sort controls have at least 44px targets.
+
+Undo stays available until the next notification, dismissal or page navigation; it does not expire while someone is trying to use it. Removing a saved idea keeps keyboard focus at the next neighboring idea. Clearing the whole board/preferences opens a review dialog with a default “Keep my ideas” action and a route to copy a board snapshot first. After an explicit clear, Undo restores saved ideas and the tap-feedback preference, merging any ideas added in another tab instead of replacing them.
+
 Mobile has a safe-area-aware shortcut bar for style ideas, saved ideas, and eBay. It does not add an account gate or payment flow.
 
 Press states, gentle image hover transitions, and one-time section reveals are progressive enhancements. Unsupported JavaScript or IntersectionObserver does not hide content. Fonts and images are served locally.

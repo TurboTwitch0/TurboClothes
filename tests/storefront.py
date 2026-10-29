@@ -4,7 +4,7 @@ Requires Python Playwright and Chromium at /usr/bin/chromium.
 """
 import os
 import re
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, urlparse, quote
 from playwright.sync_api import sync_playwright, expect
 
 BASE = os.environ.get('EVOVO_BASE_URL', 'http://localhost:3000').rstrip('/')
@@ -39,6 +39,135 @@ def reveal_and_capture(page, path):
         assert image.evaluate('(image) => image.naturalWidth > 0')
     page.evaluate('scrollTo(0, 0)')
     page.screenshot(path=path, full_page=True, animations='disabled')
+
+
+def check_practical_browsing(browser):
+    """Search, safe reading context, and reversible local clearing solve real user tasks."""
+    context = browser.new_context(viewport={'width': 1440, 'height': 1000})
+    page = context.new_page()
+    errors = []
+    page.on('pageerror', lambda error: errors.append(str(error)))
+    for query, idea in [('black pants', 'straight-pant'), ('white shirt', 'core-tee'), ('gray hoodie', 'daily-hoodie')]:
+        page.goto(BASE + '/shop/?q=' + quote(query), wait_until='networkidle')
+        expect(page.locator('#collection-grid .product-card')).to_have_count(1)
+        expect(page.locator('#collection-grid [data-save]')).to_have_attribute('data-save', idea)
+        expect(page.locator('[data-clear-search]')).to_be_visible()
+        page.locator('#search-open').click()
+        page.locator('#search-input').fill(query)
+        expect(page.locator('#search-results .search-result')).to_have_count(1)
+        expect(page.locator('#search-results .search-result')).to_have_attribute('href', '/products/' + idea + '/')
+        page.get_by_role('button', name='Close search', exact=True).click()
+        page.locator('[data-clear-search]').click()
+        expect(page.locator('#collection-query')).to_have_value('')
+        expect(page.locator('#collection-query')).to_be_focused()
+        expect(page.locator('[data-clear-search]')).not_to_be_visible()
+        expect(page.locator('#collection-grid .product-card')).to_have_count(7)
+
+    # The return link carries an actual shared edit, filter, sort, and focused item.
+    page.evaluate("localStorage.setItem('evovo.saved', JSON.stringify(['off-duty-pant']))")
+    origin = '/saved/?board=core-tee,studio-layer,off-duty-pant&category=Shirts&q=white%20shirt&sort=name'
+    page.goto(BASE + origin, wait_until='networkidle')
+    page.locator('#idea-core-tee .product-info a').click()
+    assert parse_qs(urlparse(page.url).query)['from'][0] == origin
+    expect(page.locator('[data-collection-return]')).to_have_attribute('href', origin + '#idea-core-tee')
+    page.locator('[data-collection-return]').click()
+    expect(page).to_have_url(BASE + origin + '#idea-core-tee')
+    expect(page.locator('#collection-query')).to_have_value('white shirt')
+    expect(page.locator('#product-sort')).to_have_value('name')
+    expect(page.locator('[data-category-link="Shirts"]')).to_have_attribute('aria-current', 'page')
+    expect(page.locator('#idea-core-tee .product-image')).to_be_focused()
+    assert page.evaluate("JSON.parse(localStorage.getItem('evovo.saved'))") == ['off-duty-pant']
+    origin = '/shop/pants/?q=black%20pants&sort=name'
+    page.goto(BASE + origin, wait_until='networkidle')
+    page.locator('#idea-straight-pant .product-info a').click()
+    expect(page.locator('[data-collection-return]')).to_have_attribute('href', origin + '#idea-straight-pant')
+    # Related notes retain the same safe route, not a replacement unrelated category.
+    related_href = page.locator('.product-info a').first.get_attribute('href')
+    assert parse_qs(urlparse(related_href).query)['from'][0] == origin
+    page.locator('[data-collection-return]').click()
+    expect(page.locator('#idea-straight-pant .product-image')).to_be_focused()
+    for unsafe in ['https://evil.example/saved/', '//evil.example/saved/', '/help/', '/saved/../../help/', '/shop/shirts/extra/', 'javascript:alert(1)']:
+        page.goto(BASE + '/products/core-tee/?from=' + quote(unsafe, safe=''), wait_until='networkidle')
+        expect(page.locator('[data-collection-return]')).to_have_count(0)
+        assert 'evil.example' not in page.locator('.breadcrumbs').inner_text()
+
+    # Removing a saved card keeps keyboard focus at its nearest surviving neighbor.
+    page.evaluate("localStorage.setItem('evovo.saved', JSON.stringify(['core-tee','daily-hoodie','off-duty-pant']))")
+    page.goto(BASE + '/saved/', wait_until='networkidle')
+    page.clock.install()
+    page.locator('[data-save="daily-hoodie"]').click()
+    expect(page.locator('[data-save="off-duty-pant"]')).to_be_focused()
+    undo = page.locator('[data-undo-save="daily-hoodie"]')
+    undo.focus()
+    page.clock.fast_forward(60000)
+    expect(undo).to_be_visible()
+    expect(undo).to_be_focused()
+    undo.hover()
+    page.clock.fast_forward(60000)
+    page.mouse.move(1, 1)
+    page.clock.fast_forward(60000)
+    expect(undo).to_be_visible()
+    page.locator('[data-dismiss-toast]').click()
+    expect(page.locator('#toast')).not_to_be_visible()
+    expect(page.locator('#collection-grid [data-save]').first).to_be_focused()
+    page.locator('[data-save="off-duty-pant"]').click()
+    expect(page.locator('[data-save="core-tee"]')).to_be_focused()
+    page.locator('[data-undo-save="off-duty-pant"]').click()
+    expect(page.locator('[data-save="off-duty-pant"]')).to_be_focused()
+
+    for width in [320, 390, 768, 1440]:
+        page.set_viewport_size({'width': width, 'height': 900})
+        page.goto(BASE + '/shop/?q=black%20pants', wait_until='networkidle')
+        assert_fits(page)
+        for control in page.locator('.inline-search button, .category-tabs a, #product-sort').all():
+            box = control.bounding_box()
+            assert box and box['width'] >= 43.9 and box['height'] >= 43.9, (width, box)
+        if width <= 760:
+            assert page.locator('.inline-search').bounding_box()['width'] >= width * .85
+            assert page.locator('#collection-query').evaluate('(el) => parseFloat(getComputedStyle(el).fontSize)') >= 16
+    assert not errors, errors
+    context.close()
+
+    # Clear is reviewed, cancelable, and undo restores settings without losing new saves.
+    clear_context = browser.new_context(viewport={'width': 390, 'height': 844}, is_mobile=True, has_touch=True, reduced_motion='reduce')
+    clear_context.add_init_script(MOCK_VIBRATION)
+    clear_page = clear_context.new_page()
+    clear_page.goto(BASE + '/', wait_until='networkidle')
+    clear_page.evaluate("localStorage.setItem('evovo.saved', JSON.stringify(['core-tee','daily-hoodie'])); localStorage.setItem('evovo.haptics', 'off'); localStorage.setItem('evovo.bag', '[]')")
+    clear_page.goto(BASE + '/help/', wait_until='networkidle')
+    clear_page.locator('#clear-data').tap()
+    expect(clear_page.locator('#clear-summary')).to_contain_text('2 saved ideas')
+    keep = clear_page.get_by_role('button', name='Keep my ideas', exact=True)
+    expect(keep).to_be_focused()
+    keep.tap()
+    assert clear_page.evaluate("JSON.parse(localStorage.getItem('evovo.saved'))") == ['core-tee', 'daily-hoodie']
+    assert clear_page.evaluate("localStorage.getItem('evovo.haptics')") == 'off'
+    clear_page.locator('#clear-data').tap()
+    for control in clear_page.locator('.clear-actions button').all():
+        box = control.bounding_box()
+        assert box and box['width'] >= 43.9 and box['height'] >= 43.9
+    clear_page.locator('[data-confirm-clear]').tap()
+    assert clear_page.evaluate("JSON.parse(localStorage.getItem('evovo.saved'))") == []
+    assert clear_page.evaluate("localStorage.getItem('evovo.haptics')") is None
+    expect(clear_page.locator('[data-undo-clear]')).to_be_visible()
+    clear_page.clock.install()
+    clear_page.clock.fast_forward(60000)
+    expect(clear_page.locator('[data-undo-clear]')).to_be_visible()
+    other = clear_context.new_page()
+    other.goto(BASE + '/', wait_until='networkidle')
+    other.evaluate("localStorage.setItem('evovo.saved', JSON.stringify(['graphic-tee']))")
+    expect(clear_page.locator('[data-saved-count]')).to_have_text(['1', '1'])
+    clear_page.locator('[data-undo-clear]').tap()
+    assert set(clear_page.evaluate("JSON.parse(localStorage.getItem('evovo.saved'))")) == {'graphic-tee', 'core-tee', 'daily-hoodie'}
+    assert clear_page.evaluate("localStorage.getItem('evovo.haptics')") == 'off'
+    assert clear_page.evaluate("localStorage.getItem('evovo.bag')") == '[]'
+    expect(clear_page.locator('[data-saved-count]')).to_have_text(['3', '3'])
+    expect(clear_page.locator('#clear-data')).to_be_focused()
+    # Removing reduced-motion now exposes the restored off preference unchanged.
+    clear_page.emulate_media(reduced_motion='no-preference')
+    expect(clear_page.locator('[data-haptics-toggle]')).to_have_attribute('aria-pressed', 'false')
+    other.close()
+    clear_context.close()
 
 
 def check_style_showcase(browser):
@@ -145,6 +274,12 @@ def check_style_showcase(browser):
 
 with sync_playwright() as p:
     browser = p.chromium.launch(executable_path='/usr/bin/chromium', args=['--no-sandbox'], headless=True)
+    if not os.environ.get('EVOVO_SKIP_PRACTICAL'):
+        check_practical_browsing(browser)
+    if os.environ.get('EVOVO_PRACTICAL_ONLY'):
+        browser.close()
+        print('PASS: multiword/alias search, safe collection return focus, stable undo, clear review/cancel/confirm/restore, cross-tab merge, and touch targets')
+        raise SystemExit(0)
     if not os.environ.get('EVOVO_SKIP_STAGE'):
         check_style_showcase(browser)
     if os.environ.get('EVOVO_STAGE_ONLY'):
@@ -229,7 +364,12 @@ with sync_playwright() as p:
     # Preferences can be cleared from the user-facing control.
     page.evaluate("localStorage.setItem('evovo.saved', JSON.stringify(['core-tee'])); localStorage.setItem('evovo.bag', '[]'); localStorage.setItem('evovo.haptics', 'off')")
     page.goto(BASE + '/help/', wait_until='networkidle')
-    page.get_by_role('button', name='Clear saved ideas & preferences', exact=True).click()
+    page.locator('#clear-data').click()
+    expect(page.locator('#clear-dialog')).to_be_visible()
+    page.locator('#clear-dialog [data-close="clear-dialog"]').last.click()
+    assert page.evaluate("JSON.parse(localStorage.getItem('evovo.saved'))") == ['core-tee']
+    page.locator('#clear-data').click()
+    page.locator('[data-confirm-clear]').click()
     assert page.evaluate("JSON.parse(localStorage.getItem('evovo.saved'))") == []
     assert page.evaluate("localStorage.getItem('evovo.bag')") is None
     assert page.evaluate("localStorage.getItem('evovo.haptics')") is None
@@ -455,6 +595,8 @@ with sync_playwright() as p:
     touch_page.keyboard.press('Escape')
     touch_page.goto(BASE + '/help/', wait_until='networkidle')
     touch_page.locator('#clear-data').tap()
+    expect(touch_page.locator('#clear-dialog')).to_be_visible()
+    touch_page.locator('[data-confirm-clear]').tap()
     expect(touch_page.locator('[data-haptics-toggle]')).to_have_attribute('aria-pressed', 'true')
     touch.close()
 
@@ -517,4 +659,4 @@ with sync_playwright() as p:
     failed_context.close()
 
     browser.close()
-    print('PASS: honest showroom and eBay handoff; mobile dock/live counts; saved-board filters, undo, sharing/import, clipboard fallback and cross-tab sync; responsive layouts, manual style showcase, real example-board preview/import, loading fallback/reload, and progressive haptics')
+    print('PASS: honest showroom and eBay handoff; mobile dock/live counts; saved-board filters, undo, sharing/import, clipboard fallback and cross-tab sync; responsive layouts, practical search/return/safe clearing, manual style showcase, real example-board preview/import, loading fallback/reload, and progressive haptics')
